@@ -12,8 +12,8 @@ def define_geometry(config, analyzer=1):
 
     # PRIMARY beamline geometry
     # alpha and beta angles of the PRIMARY beamline [deg]
-    alpha_prim = 71.
-    beta_prim = -7.83
+    alpha_prim = 74.217
+    beta_prim = -11.712
     gamma_prim = 0.
     prim_angles = {'r0': np.array([alpha_prim, beta_prim, gamma_prim]),
                    'A1': np.array([alpha_prim, beta_prim, gamma_prim]),
@@ -23,13 +23,13 @@ def define_geometry(config, analyzer=1):
     geom.angles.update(prim_angles)
 
     # coordinates of the injection port [m]
-    xpatr = 1.5 - 0.1541
-    ypatr = 0.86
-    zpatr = 0.03
+    xpatr = 1.3268  # 1.5 - 0.1541
+    ypatr = 0.853
+    zpatr = 0.032
     geom.r_dict['port'] = np.array([xpatr, ypatr, zpatr])
 
     # distance from the injection port to the Alpha2 plates
-    dist_A2 = 0.552  # 0.2  # [m]
+    dist_A2 = 0.243  # 0.552  # 0.2  # [m]
     # distance from Alpha2 plates to the Beta2 plates
     dist_B2 = 0.188  # [m]
     # distance from Beta2 plates to the Beta1 plates
@@ -51,9 +51,9 @@ def define_geometry(config, analyzer=1):
     geom.add_coords('r0', 'A1', dist_r0, geom.angles['r0'])
 
     # AIM position (BEFORE the Secondary beamline) [m]
-    xaim = 2.408  # 1.9
-    yaim = -0.45
-    zaim = -0.116  # 0.0
+    xaim = 1.923  # 2.408  # 1.9
+    yaim = -0.456
+    zaim = 0.0428  # -0.116  # 0.0
     r_aim = np.array([xaim, yaim, zaim])
     geom.r_dict['aim'] = r_aim
 
@@ -70,7 +70,7 @@ def define_geometry(config, analyzer=1):
     geom.angles.update(sec_angles)
 
     # distance from r_aim to the Alpha3 center
-    dist_A3 = 0.4  # 0.3  # 1/2 of plates length
+    dist_A3 = 0.9343  # 0.4  # 0.3  # 1/2 of plates length
     # distance from Alpha3 to the Beta3 center
     dist_B3 = 0.31  # + 0.6
     # from Beta3 to Beta4
