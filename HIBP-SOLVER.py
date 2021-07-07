@@ -13,31 +13,44 @@ import copy
 import time
 
 # %% set up main parameters
+# initial beam energy range
+dEbeam = 20.
+Ebeam_range = np.arange(132., 132. + dEbeam, dEbeam)  # [keV]
+
+# choose analyzer number
+analyzer = 1
+
+# magnetic configuration
+config = '100_44_64'
+print('\nShot parameters: config ' + config)
+
+# set up scanning voltage
 input_fname = 'input//II_a2_b2_a3_b3_49873.dat'
-NA2_points = 15
+NA2_points = 5
 if input_fname != '':
     exp_voltages = np.loadtxt(input_fname)
     indexes = np.linspace(1, exp_voltages.shape[0]-1, NA2_points, dtype=int)
 # UA2 voltages
-UA2min, UA2max, dUA2 = 0., 0., 2.
+UA2min, UA2max, dUA2 = -9., 5., 2.
 
 optimizeB2 = False
 optimizeA3B3 = False
 
 if optimizeB2:
     optimizeA3B3 = True
-    target = 'aim'
+    target = 'aim1'
     # A2 plates voltage
     dUA2 = 2.
-    UA2_range = np.linspace(UA2min, UA2max, NA2_points)  # [kV]
+    UA2_range = np.arange(UA2min, UA2max+dUA2, dUA2)
+    # UA2_range = np.linspace(UA2min, UA2max, NA2_points)  # [kV]
     eps_xy, eps_z = 1e-3, 1e-3
 else:
-    target = 'aim'
+    target = 'aim1'
     UA2_range = exp_voltages[indexes, 1]
     UB2_range = exp_voltages[indexes, 2]
     eps_xy, eps_z = 1e-3, 1.
 if not optimizeA3B3:
-    target = 'aim'
+    target = 'aim1'
     UA3_range = exp_voltages[indexes, 3]
     UB3_range = exp_voltages[indexes, 4]
     eps_xy, eps_z = 1e-3, 1.
@@ -45,35 +58,24 @@ if not optimizeA3B3:
 # timestep [sec]
 dt = 0.4e-7  # 0.7e-7
 
-# magnetic configuration
-config = '100_44_64'
-print('\nShot parameters: config ' + config)
-
 # probing ion charge and mass
-q = 1.60217662e-19  # electron charge [Co]
+q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
-
-# choose analyzer number
-analyzer = 1
-
-# initial beam energy range
-dEbeam = 20.
-Ebeam_range = np.arange(132., 132. + dEbeam, dEbeam)  # [keV]
 
 # A1 and B1 plates voltages
 UA1, UB1 = 0.1, 0.75
 
 # B2 plates voltage
-UB2 = 0.0  # [kV]
-dUB2 = 30.0  # [kV/m]
+UB2 = 2.0  # [kV]
+dUB2 = 35.0  # [kV/m]
 
 # B3 voltages
 UB3 = 0.0  # [kV]
-dUB3 = 10.  # 20.0  # [kV/m]
+dUB3 = -20.  # [kV/m]
 
 # A3 voltages
 UA3 = 0.0  # [kV]
-dUA3 = 7.0  # [kV/m]
+dUA3 = -20.0  # [kV/m]
 
 # A4 voltages
 UA4 = 0.0  # [kV]
@@ -166,7 +168,7 @@ for Ebeam in Ebeam_range:
                      U_dict, dt)
 
         tr = hb.optimize_B2(tr, geomTJ2, UB2, dUB2, E, B, dt, stop_plane_n,
-                            'aim', optimizeB2, eps_xy=eps_xy, eps_z=eps_z)
+                            target, optimizeB2, eps_xy=eps_xy, eps_z=eps_z)
         UB2 = tr.U['B2']
 
         if True in tr.IntersectGeometry.values():
@@ -246,7 +248,7 @@ else:
     #                   subplots_vertical=True, scale=3.5)
     hbplot.plot_scan(traj_list_a3b3, geomTJ2, 132., config,
                       full_primary=False, plot_analyzer=False,
-                      plot_det_line=False, subplots_vertical=True, scale=5)
+                      plot_det_line=True, subplots_vertical=True, scale=5)
 
 # %% Pass trajectory to the Analyzer
 #     print('\n Optimizing entrance angle to Analyzer with A4')

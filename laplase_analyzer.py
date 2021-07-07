@@ -119,6 +119,8 @@ if __name__ == '__main__':
         width = 0.164  # along Z [m]
         thick = 0.008  # [m]
         gap = 0.1  # distance between plates along Y [m]
+        Uupper_plate = 1e3
+        Ulower_plate = 0.
 
     elif plts_name == 'B4':
         beamline = 'sec'

@@ -23,10 +23,10 @@ def define_geometry(config, analyzer=1):
     geom.angles.update(prim_angles)
 
     # coordinates of the injection port [m]
-    xpatr = 1.3268  # 1.5 - 0.1541
-    ypatr = 0.853
-    zpatr = 0.032
-    geom.r_dict['port'] = np.array([xpatr, ypatr, zpatr])
+    xport = 1.3268  # 1.5 - 0.1541
+    yport = 0.853
+    zport = 0.032
+    geom.r_dict['port'] = np.array([xport, yport, zport])
 
     # distance from the injection port to the Alpha2 plates
     dist_A2 = 0.243  # 0.552  # 0.2  # [m]
@@ -62,7 +62,8 @@ def define_geometry(config, analyzer=1):
     alpha_sec = 0.
     beta_sec = 15.5
     gamma_sec = 17.
-    sec_angles = {'A3': np.array([alpha_sec, beta_sec, gamma_sec]),
+    sec_angles = {'aim1': np.array([alpha_sec, beta_sec, gamma_sec]),
+                  'A3': np.array([alpha_sec, beta_sec, gamma_sec]),
                   'B3': np.array([alpha_sec, 12., gamma_sec]),
                   'A4': np.array([alpha_sec, 4., 25.]),
                   'B4': np.array([alpha_sec, 4., 25.]),
@@ -80,6 +81,8 @@ def define_geometry(config, analyzer=1):
     # distance from Beta3 to the entrance slit of the analyzer
     dist_s = 1.3
 
+    # coordinates of the center of the new aim point
+    geom.add_coords('aim1', 'aim', dist_A3-0.1, geom.angles['A3'])
     # coordinates of the center of the ALPHA3 plates
     geom.add_coords('A3', 'aim', dist_A3, geom.angles['A3'])
     # coordinates of the center of the BETA3 plates
