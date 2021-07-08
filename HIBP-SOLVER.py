@@ -38,19 +38,19 @@ optimizeA3B3 = False
 
 if optimizeB2:
     optimizeA3B3 = True
-    target = 'aim1'
+    target = 'aim'
     # A2 plates voltage
     dUA2 = 2.
     UA2_range = np.arange(UA2min, UA2max+dUA2, dUA2)
     # UA2_range = np.linspace(UA2min, UA2max, NA2_points)  # [kV]
     eps_xy, eps_z = 1e-3, 1e-3
 else:
-    target = 'aim1'
+    target = 'aim'
     UA2_range = exp_voltages[indexes, 1]
     UB2_range = exp_voltages[indexes, 2]
     eps_xy, eps_z = 1e-3, 1.
 if not optimizeA3B3:
-    target = 'aim1'
+    target = 'aim'
     UA3_range = exp_voltages[indexes, 3]
     UB3_range = exp_voltages[indexes, 4]
     eps_xy, eps_z = 1e-3, 1.

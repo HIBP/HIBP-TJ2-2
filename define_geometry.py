@@ -12,8 +12,8 @@ def define_geometry(config, analyzer=1):
 
     # PRIMARY beamline geometry
     # alpha and beta angles of the PRIMARY beamline [deg]
-    alpha_prim = 74.217
-    beta_prim = -11.712
+    alpha_prim = 73.381
+    beta_prim = -11.856
     gamma_prim = 0.
     prim_angles = {'r0': np.array([alpha_prim, beta_prim, gamma_prim]),
                    'A1': np.array([alpha_prim, beta_prim, gamma_prim]),
@@ -51,9 +51,9 @@ def define_geometry(config, analyzer=1):
     geom.add_coords('r0', 'A1', dist_r0, geom.angles['r0'])
 
     # AIM position (BEFORE the Secondary beamline) [m]
-    xaim = 1.923  # 2.408  # 1.9
+    xaim = 1.901  # 2.408  # 1.9
     yaim = -0.456
-    zaim = 0.0428  # -0.116  # 0.0
+    zaim = 0.046  # -0.116  # 0.0
     r_aim = np.array([xaim, yaim, zaim])
     geom.r_dict['aim'] = r_aim
 
@@ -64,7 +64,7 @@ def define_geometry(config, analyzer=1):
     gamma_sec = 17.
     sec_angles = {'aim1': np.array([alpha_sec, beta_sec, gamma_sec]),
                   'A3': np.array([alpha_sec, beta_sec, gamma_sec]),
-                  'B3': np.array([alpha_sec, 12., gamma_sec]),
+                  'B3': np.array([alpha_sec, -4.8, gamma_sec]),
                   'A4': np.array([alpha_sec, 4., 25.]),
                   'B4': np.array([alpha_sec, 4., 25.]),
                   'an': np.array([alpha_sec, 4., 25.])}
