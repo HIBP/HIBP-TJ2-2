@@ -14,7 +14,7 @@ def define_geometry(config, analyzer=1):
     # alpha and beta angles of the PRIMARY beamline [deg]
     alpha_prim = 73.381
     beta_prim = -11.856
-    gamma_prim = 0.
+    gamma_prim = 0.  # 15.
     prim_angles = {'r0': np.array([alpha_prim, beta_prim, gamma_prim]),
                    'A1': np.array([alpha_prim, beta_prim, gamma_prim]),
                    'B1': np.array([alpha_prim, beta_prim, gamma_prim]),
@@ -51,7 +51,7 @@ def define_geometry(config, analyzer=1):
     geom.add_coords('r0', 'A1', dist_r0, geom.angles['r0'])
 
     # AIM position (BEFORE the Secondary beamline) [m]
-    xaim = 1.901  # 2.408  # 1.9
+    xaim = 1.9012  # 2.408  # 1.9
     yaim = -0.456
     zaim = 0.046  # -0.116  # 0.0
     r_aim = np.array([xaim, yaim, zaim])
@@ -64,10 +64,10 @@ def define_geometry(config, analyzer=1):
     gamma_sec = 17.
     sec_angles = {'aim1': np.array([alpha_sec, beta_sec, gamma_sec]),
                   'A3': np.array([alpha_sec, beta_sec, gamma_sec]),
-                  'B3': np.array([alpha_sec, -4.8, gamma_sec]),
-                  'A4': np.array([alpha_sec, 4., 25.]),
-                  'B4': np.array([alpha_sec, 4., 25.]),
-                  'an': np.array([alpha_sec, 4., 25.])}
+                  'B3': np.array([alpha_sec, 4.8, gamma_sec]),
+                  'A4': np.array([0.11, 3.95, 25.]),
+                  'B4': np.array([0.11, 3.95, 25.]),
+                   'an': np.array([0.11, 3.95, 25.])}
     geom.angles.update(sec_angles)
 
     # distance from r_aim to the Alpha3 center
@@ -76,25 +76,32 @@ def define_geometry(config, analyzer=1):
     dist_B3 = 0.31  # + 0.6
     # from Beta3 to Beta4
     dist_B4 = 0.66
-    # from Beta3 to Aalpha4
-    dist_A4 = 1.0
-    # distance from Beta3 to the entrance slit of the analyzer
-    dist_s = 1.3
+    # from Beta4 to Aalpha4
+    dist_A4 = 0.24
+    # distance from Alpha4 to the entrance slit of the analyzer
+    dist_s = 0.398
 
     # coordinates of the center of the new aim point
     geom.add_coords('aim1', 'aim', dist_A3-0.1, geom.angles['A3'])
     # coordinates of the center of the ALPHA3 plates
     geom.add_coords('A3', 'aim', dist_A3, geom.angles['A3'])
-    # coordinates of the center of the BETA3 plates
-    geom.add_coords('B3', 'A3', dist_B3, geom.angles['B3'])
-    # coordinates of the center of the BETA4 plates
-    geom.add_coords('B4', 'B3', dist_B4, geom.angles['B4'])
-    # coordinates of the center of the ALPHA4 plates
-    geom.add_coords('A4', 'B3', dist_A4, geom.angles['A4'])
-    # Coordinates of the CENTRAL slit
-    geom.add_coords('slit', 'B3', dist_s, geom.angles['an'])
-    # Coordinates of the ANALYZER
-    geom.add_coords('an', 'B3', dist_s, geom.angles['an'])
+
+    geom.r_dict['B3'] = np.array([3.113, -0.418, -0.23])
+    geom.r_dict['B4'] = np.array([3.772, -0.4645, -0.313])
+    geom.r_dict['A4'] = np.array([4.0115, -0.464, -0.3296])
+    geom.r_dict['slit'] = np.array([4.4084, -0.4663, -0.3584])
+    geom.r_dict['an'] = geom.r_dict['slit']
+
+    # # coordinates of the center of the BETA3 plates
+    # geom.add_coords('B3', 'A3', dist_B3, geom.angles['B3'])
+    # # coordinates of the center of the BETA4 plates
+    # geom.add_coords('B4', 'B3', dist_B4, geom.angles['B4'])
+    # # coordinates of the center of the ALPHA4 plates
+    # geom.add_coords('A4', 'B4', dist_A4, geom.angles['A4'])
+    # # Coordinates of the CENTRAL slit
+    # geom.add_coords('slit', 'A4', dist_s, geom.angles['an'])
+    # # Coordinates of the ANALYZER
+    # geom.add_coords('an', 'A4', dist_s, geom.angles['an'])
 
     # print info
     print('\nDefining geometry for Analyzer #{}'.format(analyzer))

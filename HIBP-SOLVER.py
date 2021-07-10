@@ -34,23 +34,24 @@ if input_fname != '':
 UA2min, UA2max, dUA2 = -9., 5., 2.
 
 optimizeB2 = False
-optimizeA3B3 = False
+optimizeA3B3 = True
+pass2AN = True
 
 if optimizeB2:
     optimizeA3B3 = True
-    target = 'aim'
+    target = 'aim1'
     # A2 plates voltage
     dUA2 = 2.
     UA2_range = np.arange(UA2min, UA2max+dUA2, dUA2)
     # UA2_range = np.linspace(UA2min, UA2max, NA2_points)  # [kV]
     eps_xy, eps_z = 1e-3, 1e-3
 else:
-    target = 'aim'
+    target = 'aim1'
     UA2_range = exp_voltages[indexes, 1]
     UB2_range = exp_voltages[indexes, 2]
     eps_xy, eps_z = 1e-3, 1.
 if not optimizeA3B3:
-    target = 'aim'
+    target = 'aim1'
     UA3_range = exp_voltages[indexes, 3]
     UB3_range = exp_voltages[indexes, 4]
     eps_xy, eps_z = 1e-3, 1.
@@ -126,7 +127,7 @@ E.update(E_sec)
 # %% Analyzer parameters
 if geomTJ2.an_params.shape[0] > 0:
     # Analyzer G
-    G = geomTJ2.an_params[3]  
+    G = geomTJ2.an_params[3]
 
     n_slits, slit_dist, slit_w = geomTJ2.an_params[:3]
 
@@ -233,11 +234,23 @@ else:
         print('\nEb = {}, UA2 = {}'.format(tr.Ebeam, tr.U['A2']))
         RV0 = np.array([tr.RV_sec[0]])
         tr.pass_sec(RV0, geomTJ2.r_dict['slit'], E, B, geomTJ2,
-                    # stop_plane_n=stop_plane_n,
+                    stop_plane_n=geomTJ2.det_plane_n,
                     tmax=9e-5, eps_xy=eps_xy, eps_z=eps_z)
         traj_list_a3b3.append(tr)
     t2 = time.time()
     print('\n Secondary beamline calculated, t = {:.1f} s\n'.format(t2-t1))
+
+# %% Pass to ANALYZER
+if pass2AN:
+    print('\n Passing to ANALYZER {}'.format(analyzer))
+    traj_list_an = []
+    for tr in copy.deepcopy(traj_list_a3b3):
+        print('\nEb = {}, UA2 = {}'.format(tr.Ebeam, tr.U['A2']))
+        RV0 = np.array([tr.RV_sec[0]])
+        tr.pass_sec(RV0, geomTJ2.r_dict['det'], E, B, geomTJ2,
+                    stop_plane_n=geomTJ2.det_plane_n,
+                    tmax=9e-5, eps_xy=eps_xy, eps_z=eps_z)
+        traj_list_an.append(tr)
 
 # %% Additional plots
     # hbplot.plot_grid_a3b3(traj_list_a3b3, geomTJ2, config,
@@ -247,7 +260,11 @@ else:
     #                   full_primary=False, plot_analyzer=True,
     #                   subplots_vertical=True, scale=3.5)
     hbplot.plot_scan(traj_list_a3b3, geomTJ2, 132., config,
-                      full_primary=False, plot_analyzer=False,
+                      full_primary=False, plot_analyzer=True,
+                      plot_det_line=True, subplots_vertical=True, scale=5)
+
+    hbplot.plot_scan(traj_list_an, geomTJ2, 132., config,
+                      full_primary=False, plot_analyzer=True,
                       plot_det_line=True, subplots_vertical=True, scale=5)
 
 # %% Pass trajectory to the Analyzer

@@ -1285,8 +1285,19 @@ def return_E(r, Ein, U, geom):
         angles = geom.angles[key]
         # shift the center of coord system
         r_new = r - geom.r_dict[key]
-        # rotate point to the coord system of plates
-        r_new = rotate3(r_new, angles, inverse=True)
+        # exseption for the analyzer
+        if key == 'an':
+            theta_an = geom.an_params[4]
+            # analyzer should be rotated around the axis of the beamline
+            axis = calc_vector(1, angles[0], angles[1])
+            # rotate in inverse order
+            r_new = rotate(r_new, axis=axis, deg=-angles[2])
+            r_new = rotate(r_new, axis=(0, 1, 0), deg=-angles[1])
+            # alpha angle of the analyzer should be corrected
+            r_new = rotate(r_new, axis=(0, 0, 1), deg=-(angles[0]-theta_an))
+        else:
+            # rotate point to the coord system of plates
+            r_new = rotate3(r_new, angles, inverse=True)
         # interpolate Electric field
         Etemp = np.zeros(3)
         try:
@@ -1294,7 +1305,12 @@ def return_E(r, Ein, U, geom):
             Etemp[1] = Ein[key][1](r_new) * U[key]
             Etemp[2] = Ein[key][2](r_new) * U[key]
             # rotate Etemp
-            Etemp = rotate3(Etemp, angles, inverse=False)
+            if key == 'an':
+                Etemp = rotate(Etemp, axis=(0, 0, 1), deg=angles[0]-theta_an)
+                Etemp = rotate(Etemp, axis=(0, 1, 0), deg=angles[1])
+                Etemp = rotate(Etemp, axis=axis, deg=angles[2])
+            else:
+                Etemp = rotate3(Etemp, angles, inverse=False)
             # add the result to total E field
             Etotal += Etemp
         except (ValueError, IndexError):
