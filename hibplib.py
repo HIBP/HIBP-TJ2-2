@@ -335,18 +335,22 @@ class Geometry():
 
     def check_plates_intersect(self, point1, point2):
         # do not check intersection when particle is outside beamlines
-        if point2[0] < self.r_dict['aim'][0]-0.05 and \
+        if point2[0] < self.r_dict['aim1'][0]-0.05 and \
             point1[1] < self.r_dict['port'][1]:
             return False, 'none'
         segment_coords = np.array([point1, point2])
         for key in self.plates_edges.keys():
-            if key == 'an':
-                continue
-            if segm_poly_intersect(self.plates_edges[key][0],
-                                   segment_coords) or \
-                segm_poly_intersect(self.plates_edges[key][1],
-                                    segment_coords):
-                return True, key
+            # check if a point in inside the beamline
+            if (key in ['A1', 'B1', 'A2', 'B2'] and
+                point1[1] > self.r_dict['port'][1]) or \
+                (key in ['A3', 'B3', 'A4', 'B4'] and
+                point2[0] > self.r_dict['aim1'][0]-0.05):
+                # check intersection
+                if segm_poly_intersect(self.plates_edges[key][0],
+                                       segment_coords) or \
+                    segm_poly_intersect(self.plates_edges[key][1],
+                                        segment_coords):
+                    return True, key
             else:
                 continue
         return False, 'none'
@@ -404,17 +408,14 @@ class Geometry():
                                                     det_w, det_l)
         # angles of the beamline
         beamline_angles = copy.deepcopy(self.angles['an'])
-        # set the beamline axis
-        axis = calc_vector(1, beamline_angles[0], beamline_angles[1])
+        # angles of the analyzer
+        angles = copy.deepcopy(self.angles['an'])
+        angles[0] = angles[0] - theta_an
         # rotate and shift to position
         for i_slit in range(n_det):
             for j in range(5):
-                r_det[i_slit, j, :] = rotate(r_det[i_slit, j, :], axis=(0, 0, 1),
-                                          deg=beamline_angles[0]-theta_an)
-                r_det[i_slit, j, :] = rotate(r_det[i_slit, j, :], axis=(0, 1, 0),
-                                          deg=beamline_angles[1])
-                r_det[i_slit, j, :] = rotate(r_det[i_slit, j, :], axis=axis,
-                                          deg=beamline_angles[2])
+                r_det[i_slit, j, :] = rotate3(r_det[i_slit, j, :],
+                                              angles, beamline_angles)
                 r_det[i_slit, j, :] += self.r_dict['slit']
             if n_det//2 - i_slit == 0:
                  # add coords of the center of the central detector
@@ -533,7 +534,8 @@ def define_slits(r0, slit_angles, n_slits, slit_dist, slit_w, slit_l):
         r_slits[i_slit, 4, :] = [0., y0 + slit_w/2, -slit_l/2]
         # rotate and shift to slit position:
         for j in range(5):
-            r_slits[i_slit, j, :] = rotate3(r_slits[i_slit, j, :], slit_angles)
+            r_slits[i_slit, j, :] = rotate3(r_slits[i_slit, j, :],
+                                            slit_angles, slit_angles)
             r_slits[i_slit, j, :] += r0
 
     # calculate normal to slit plane:
@@ -920,7 +922,7 @@ def optimize_A4(tr, geom, UA4, dUA4,
         print('UA4 NEW = {:.2f} kV'.format(UA4))
         n_stepsA4 += 1
 
-        if abs(UA4) > 200.:
+        if abs(UA4) > 50.:
             print('ALPHA4 failed, voltage too high')
             return tr
         if n_stepsA4 > 100:
@@ -1064,7 +1066,7 @@ def rot_mx(axis=(1, 0, 0), deg=0):
 
 
 @numba.jit()
-def rotate(input_array, axis=(1, 0, 0), deg=0):
+def rotate(input_array, axis=(1, 0, 0), deg=0.):
     '''
     rotate vector around given axis by deg degrees
     :param axis: axis of rotation
@@ -1078,12 +1080,14 @@ def rotate(input_array, axis=(1, 0, 0), deg=0):
 
 
 @numba.jit()
-def rotate3(input_array, angles, inverse=False):
+def rotate3(input_array, plates_angles, beamline_angles, inverse=False):
     '''
     rotate vector in 3 dimentions
+    plates_angles - angles of the plates
+    beamline_angles - angles of the beamline axis, rotation on gamma angle
     '''
-    alpha, beta, gamma = angles
-    axis = calc_vector(1, alpha, beta)
+    alpha, beta, gamma = plates_angles
+    axis = calc_vector(1, beamline_angles[0], beamline_angles[1])
 
     if inverse:
         rotated_array = rotate(input_array, axis=axis, deg=-gamma)
@@ -1281,23 +1285,17 @@ def return_E(r, Ein, U, geom):
         return Etotal
     # go through all the plates
     for key in geom.plates_edges.keys():
-        # check primary or secondary beamline
-        angles = geom.angles[key]
         # shift the center of coord system
         r_new = r - geom.r_dict[key]
-        # exseption for the analyzer
+        # get angles
+        angles = copy.deepcopy(geom.angles[key])
+        beamline_angles = copy.deepcopy(geom.angles[key])
+        # change alpha angle of the analyzer
         if key == 'an':
             theta_an = geom.an_params[4]
-            # analyzer should be rotated around the axis of the beamline
-            axis = calc_vector(1, angles[0], angles[1])
-            # rotate in inverse order
-            r_new = rotate(r_new, axis=axis, deg=-angles[2])
-            r_new = rotate(r_new, axis=(0, 1, 0), deg=-angles[1])
-            # alpha angle of the analyzer should be corrected
-            r_new = rotate(r_new, axis=(0, 0, 1), deg=-(angles[0]-theta_an))
-        else:
-            # rotate point to the coord system of plates
-            r_new = rotate3(r_new, angles, inverse=True)
+            angles[0] = angles[0] - theta_an
+        # rotate point to the coord system of plates
+        r_new = rotate3(r_new, angles, beamline_angles, inverse=True)
         # interpolate Electric field
         Etemp = np.zeros(3)
         try:
@@ -1305,12 +1303,7 @@ def return_E(r, Ein, U, geom):
             Etemp[1] = Ein[key][1](r_new) * U[key]
             Etemp[2] = Ein[key][2](r_new) * U[key]
             # rotate Etemp
-            if key == 'an':
-                Etemp = rotate(Etemp, axis=(0, 0, 1), deg=angles[0]-theta_an)
-                Etemp = rotate(Etemp, axis=(0, 1, 0), deg=angles[1])
-                Etemp = rotate(Etemp, axis=axis, deg=angles[2])
-            else:
-                Etemp = rotate3(Etemp, angles, inverse=False)
+            Etemp = rotate3(Etemp, angles, beamline_angles, inverse=False)
             # add the result to total E field
             Etotal += Etemp
         except (ValueError, IndexError):
@@ -1390,6 +1383,7 @@ def read_E(beamline, geom, dirname='elecfield'):
     for filename in file_list:
         plts_name = filename[0:2]
         r_new = r_dict[plts_name]
+        angles = copy.deepcopy(geom.angles[plts_name])
         beamline_angles = copy.deepcopy(geom.angles[plts_name])
         print('position', r_new)
 
@@ -1405,25 +1399,14 @@ def read_E(beamline, geom, dirname='elecfield'):
                 an_params = [float(i) for i in f.readline().split()[0:8]]
                 geom.an_params = np.array(an_params)
                 theta_an = geom.an_params[4]  # analyzer entrance angle
+                angles[0] = angles[0] - theta_an
             for line in f:
                 edges_list.append([float(i) for i in line.split()[0:3]])
 
         edges_list = np.array(edges_list)
         # rotate plates edges
-        if plts_name == 'an':
-            # analyzer should be rotated around the axis of the beamline
-            axis = calc_vector(1, beamline_angles[0], beamline_angles[1])
-            for i in range(edges_list.shape[0]):
-                # alpha angle of the analyzer should be corrected
-                edges_list[i, :] = rotate(edges_list[i, :], axis=(0, 0, 1),
-                                          deg=beamline_angles[0]-theta_an)
-                edges_list[i, :] = rotate(edges_list[i, :], axis=(0, 1, 0),
-                                          deg=beamline_angles[1])
-                edges_list[i, :] = rotate(edges_list[i, :], axis=axis,
-                                          deg=beamline_angles[2])
-        else:
-            for i in range(edges_list.shape[0]):
-                edges_list[i, :] = rotate3(edges_list[i, :], beamline_angles)
+        for i in range(edges_list.shape[0]):
+            edges_list[i, :] = rotate3(edges_list[i, :], angles, beamline_angles)
         # shift coords center and put into a dictionary
         edges_dict[plts_name] = np.array([edges_list[0:4, :] + r_new,
                                           edges_list[4:, :] + r_new])

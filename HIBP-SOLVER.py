@@ -72,11 +72,11 @@ dUB2 = 35.0  # [kV/m]
 
 # B3 voltages
 UB3 = 0.0  # [kV]
-dUB3 = -20.  # [kV/m]
+dUB3 = -25.0  # [kV/m]
 
 # A3 voltages
 UA3 = 0.0  # [kV]
-dUA3 = -20.0  # [kV/m]
+dUA3 = -25.0  # [kV/m]
 
 # A4 voltages
 UA4 = 0.0  # [kV]
