@@ -430,7 +430,6 @@ class Geometry():
         r0 = self.r_dict['det']
         det_spot = 1.5*np.vstack([r_det[0, [1, 4], :] - r0,
                                   r_det[-1, [3, 2], :] - r0]) + r0
-
         self.det_edges = r_det
         self.det_plane_n = det_plane_n
         self.det_spot = det_spot
@@ -1596,7 +1595,7 @@ def save_traj_list(traj_list, config, r_aim, dirname='output'):
 
     for traj in traj_list:
         Ebeam_list.append(traj.Ebeam)
-        UA2_list.append(traj.U[0])
+        UA2_list.append(traj.U['A2'])
 
     dirname = dirname + '/' + config
 
