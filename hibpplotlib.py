@@ -681,7 +681,7 @@ def plot_scan(traj_list, geom, Ebeam, config, full_primary=False,
     UA2_max = np.amax(np.array(A2list))
     UA2_min = np.amin(np.array(A2list))
 
-    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] kV, {}'
+    ax1.set_title('Ebeam={} keV, UA2:[{:.2f}, {:.2f}] kV, {}'
                   .format(Ebeam, UA2_min,  UA2_max, config))
 
 

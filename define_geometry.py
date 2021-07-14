@@ -61,13 +61,13 @@ def define_geometry(config, analyzer=1):
     # alpha and beta angles of the SECONDARY beamline [deg]
     alpha_sec = 0.
     beta_sec = 15.5
-    gamma_sec = 17.
+    gamma_sec = 20.  # 17.
     sec_angles = {'aim1': np.array([alpha_sec, beta_sec, gamma_sec]),
                   'A3': np.array([alpha_sec, beta_sec, gamma_sec]),
-                  'B3': np.array([alpha_sec, 4.8, gamma_sec]),
-                  'A4': np.array([0.11, 3.95, 25.]),
-                  'B4': np.array([0.11, 3.95, 25.]),
-                   'an': np.array([0.11, 3.95, 25.])}
+                  'B3': np.array([alpha_sec, 4.84, gamma_sec]),
+                  'A4': np.array([0.11, 3.95, 26.16]),
+                  'B4': np.array([0.11, 3.95, 26.16]),
+                  'an': np.array([0.11, 3.95, 26.16])}
     geom.angles.update(sec_angles)
 
     # distance from r_aim to the Alpha3 center
@@ -131,5 +131,11 @@ def define_geometry(config, analyzer=1):
     geom.camera = np.loadtxt('TJII_camera.dat')
     # Separatrix contour
     geom.sep = np.loadtxt('configs//' + config + '.txt')
+
+    for key in geom.r_dict.keys():
+        # shift along X, Y or Z axis
+        geom.r_dict[key][0] += 0.0
+        geom.r_dict[key][1] += 0.0
+        geom.r_dict[key][2] += 0.0
 
     return geom

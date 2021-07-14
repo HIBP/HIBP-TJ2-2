@@ -36,6 +36,7 @@ UA2min, UA2max, dUA2 = -9., 5., 2.
 optimizeB2 = False
 optimizeA3B3 = False
 pass2AN = True
+save_radref = False
 
 if optimizeB2:
     optimizeA3B3 = True
@@ -163,7 +164,8 @@ for Ebeam in Ebeam_range:
         print('\n\nE = {} keV; UA2 = {} kV\n'.format(Ebeam, UA2))
         # dict of starting voltages
         U_dict = {'A1': UA1, 'B1': UB1, 'A2': UA2, 'B2': UB2,
-                  'A3': UA3, 'B3': UB3, 'A4': UA4, 'B4': UB4, 'an': Ebeam/(2*G)}
+                  'A3': UA3, 'B3': UB3, 'A4': UA4, 'B4': UB4,
+                  'an': Ebeam/(2*G)}
 
         # create new trajectory object
         tr = hb.Traj(q, m_ion, Ebeam, r0,
@@ -232,7 +234,7 @@ if optimizeA3B3:
 else:
     print('\n Calculating secondary beamline')
     for tr in copy.deepcopy(traj_list_passed):
-        print('\nEb = {}, UA2 = {}'.format(tr.Ebeam, tr.U['A2']))
+        print('\nEb = {}, UA2 = {:.2f}'.format(tr.Ebeam, tr.U['A2']))
         RV0 = np.array([tr.RV_sec[0]])
         tr.pass_sec(RV0, geomTJ2.r_dict['slit'], E, B, geomTJ2,
                     stop_plane_n=geomTJ2.det_plane_n,
@@ -246,7 +248,7 @@ if pass2AN:
     print('\n Passing to ANALYZER {}'.format(analyzer))
     traj_list_an = []
     for tr in copy.deepcopy(traj_list_a3b3):
-        print('\nEb = {}, UA2 = {}'.format(tr.Ebeam, tr.U['A2']))
+        print('\nEb = {}, UA2 = {:.2f}'.format(tr.Ebeam, tr.U['A2']))
         RV0 = np.array([tr.RV_sec[0]])
         tr.pass_sec(RV0, geomTJ2.r_dict['det'], E, B, geomTJ2,
                     stop_plane_n=geomTJ2.det_plane_n,
@@ -291,7 +293,8 @@ hbplot.plot_scan(traj_list_an, geomTJ2, 132., config,
 #                   plot_det_line=False, subplots_vertical=True, scale=5)
 
 # %% Save radref
-hb.save_radref(traj_list_an, 132., rho_interp)
+if save_radref:
+    hb.save_radref(traj_list_an, 132., rho_interp)
 
 # %% Save list of trajectories
 
