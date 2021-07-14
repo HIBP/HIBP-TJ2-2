@@ -14,7 +14,7 @@ def define_geometry(config, analyzer=1):
     # alpha and beta angles of the PRIMARY beamline [deg]
     alpha_prim = 73.381
     beta_prim = -11.856
-    gamma_prim = 0.  # 15.
+    gamma_prim = 0.  # -15.
     prim_angles = {'r0': np.array([alpha_prim, beta_prim, gamma_prim]),
                    'A1': np.array([alpha_prim, beta_prim, gamma_prim]),
                    'B1': np.array([alpha_prim, beta_prim, gamma_prim]),

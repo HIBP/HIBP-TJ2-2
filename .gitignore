@@ -17,6 +17,7 @@ tests
 trash
 backup
 output
+radref
 *.png
 *.doc
 *.docx

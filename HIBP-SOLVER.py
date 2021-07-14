@@ -1,7 +1,7 @@
 '''
 TJ2 stellarator, HIBP-II
 
-Program calculates trajectories and selects voltages on 
+Program calculates trajectories and selects voltages on
 primary beamline (B2 plates) and secondary beamline (A3, B3, B4, A4 plates)
 '''
 
@@ -26,7 +26,7 @@ print('\nShot parameters: config ' + config)
 
 # set up scanning voltage
 input_fname = 'input//II_a2_b2_a3_b3_49873.dat'
-NA2_points = 5
+NA2_points = 25
 if input_fname != '':
     exp_voltages = np.loadtxt(input_fname)
     indexes = np.linspace(1, exp_voltages.shape[0]-1, NA2_points, dtype=int)
@@ -34,7 +34,7 @@ if input_fname != '':
 UA2min, UA2max, dUA2 = -9., 5., 2.
 
 optimizeB2 = False
-optimizeA3B3 = True
+optimizeA3B3 = False
 pass2AN = True
 
 if optimizeB2:
@@ -156,12 +156,14 @@ traj_list_B2 = []
 for Ebeam in Ebeam_range:
     for i in range(UA2_range.shape[0]):
         UA2 = UA2_range[i]
-        if not optimizeB2: UB2 = UB2_range[i]
-        if not optimizeA3B3: UA3, UB3 = UA3_range[i], UB3_range[i]
+        if not optimizeB2:
+            UB2 = UB2_range[i]
+        if not optimizeA3B3:
+            UA3, UB3 = UA3_range[i], UB3_range[i]
         print('\n\nE = {} keV; UA2 = {} kV\n'.format(Ebeam, UA2))
         # dict of starting voltages
-        U_dict= {'A1':UA1, 'B1':UB1, 'A2':UA2, 'B2':UB2,
-                 'A3':UA3, 'B3':UB3, 'A4':UA4, 'B4':UB4, 'an':Ebeam/(2*G)}
+        U_dict = {'A1': UA1, 'B1': UB1, 'A2': UA2, 'B2': UB2,
+                  'A3': UA3, 'B3': UB3, 'A4': UA4, 'B4': UB4, 'an': Ebeam/(2*G)}
 
         # create new trajectory object
         tr = hb.Traj(q, m_ion, Ebeam, r0,
@@ -210,14 +212,14 @@ hbplot.plot_scan(traj_list_passed, geomTJ2, Ebeam, config,
 
 # %% Optimize Secondary Beamline
 t1 = time.time()
+traj_list_a3b3 = []
 if optimizeA3B3:
     print('\n Secondary beamline optimization')
-    traj_list_a3b3 = []
     for tr in copy.deepcopy(traj_list_passed):
         tr, vltg_fail = hb.optimize_A3B3(tr, geomTJ2, UA3, UB3, dUA3, dUB3,
-                                          E, B, dt, target='slit',
-                                          UA3_max=40., UB3_max=40.,
-                                          eps_xy=1e-3, eps_z=1e-3)
+                                         E, B, dt, target='slit',
+                                         UA3_max=40., UB3_max=40.,
+                                         eps_xy=1e-3, eps_z=1e-3)
         if not (True in tr.IntersectGeometrySec.values()) and not vltg_fail:
             traj_list_a3b3.append(tr)
             print('\n Trajectory saved')
@@ -229,7 +231,6 @@ if optimizeA3B3:
     print('\n A3 & B3 voltages optimized, t = {:.1f} s\n'.format(t2-t1))
 else:
     print('\n Calculating secondary beamline')
-    traj_list_a3b3 = []
     for tr in copy.deepcopy(traj_list_passed):
         print('\nEb = {}, UA2 = {}'.format(tr.Ebeam, tr.U['A2']))
         RV0 = np.array([tr.RV_sec[0]])
@@ -253,19 +254,19 @@ if pass2AN:
         traj_list_an.append(tr)
 
 # %% Additional plots
-    # hbplot.plot_grid_a3b3(traj_list_a3b3, geomTJ2, config,
-    #                       linestyle_A2='--', linestyle_E='-',
-    #                       marker_E='p')
-    # hbplot.plot_traj(traj_list_a3b3, geomTJ2, 132., 0.0, config,
-    #                   full_primary=False, plot_analyzer=True,
-    #                   subplots_vertical=True, scale=3.5)
-    hbplot.plot_scan(traj_list_a3b3, geomTJ2, 132., config,
-                      full_primary=False, plot_analyzer=True,
-                      plot_det_line=True, subplots_vertical=True, scale=5)
+# hbplot.plot_grid_a3b3(traj_list_a3b3, geomTJ2, config,
+#                       linestyle_A2='--', linestyle_E='-',
+#                       marker_E='p')
+# hbplot.plot_traj(traj_list_a3b3, geomTJ2, 132., 0.0, config,
+#                   full_primary=False, plot_analyzer=True,
+#                   subplots_vertical=True, scale=3.5)
+hbplot.plot_scan(traj_list_a3b3, geomTJ2, 132., config,
+                 full_primary=False, plot_analyzer=True,
+                 plot_det_line=True, subplots_vertical=True, scale=4)
 
-    hbplot.plot_scan(traj_list_an, geomTJ2, 132., config,
-                      full_primary=False, plot_analyzer=True,
-                      plot_det_line=True, subplots_vertical=True, scale=5)
+hbplot.plot_scan(traj_list_an, geomTJ2, 132., config,
+                 full_primary=False, plot_analyzer=True,
+                 plot_det_line=True, subplots_vertical=True, scale=4)
 
 # %% Pass trajectory to the Analyzer
 #     print('\n Optimizing entrance angle to Analyzer with A4')
@@ -288,6 +289,9 @@ if pass2AN:
 # hbplot.plot_scan(traj_list_a4, geomTJ2, 132., config,
 #                   full_primary=False, plot_analyzer=False,
 #                   plot_det_line=False, subplots_vertical=True, scale=5)
+
+# %% Save radref
+hb.save_radref(traj_list_an, 132., rho_interp)
 
 # %% Save list of trajectories
 

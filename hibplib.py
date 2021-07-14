@@ -315,13 +315,13 @@ class Geometry():
         intersect_flag = False
         # do not check intersection when particle is far from chamber
         if point1[0] > 1.95 and point2[1] > 0.7:
-                return intersect_flag
+            return intersect_flag
         if beamline == 'prim':
             # check intersection with chamber entrance and chamber at HFS
             # if len(self.chamb_ent) == 0: return False
             for coords_list in [self.chamb_ent, self.chamb]:
                 flags_list = [segm_intersect(point1[0:2], point2[0:2],
-                                    coords_list[i], coords_list[i+1])
+                                             coords_list[i], coords_list[i+1])
                               for i in np.arange(0, len(coords_list), 2)]
                 intersect_flag = intersect_flag or (True in flags_list)
         elif beamline == 'sec':
@@ -330,13 +330,13 @@ class Geometry():
             for i in np.arange(0, len(self.chamb_ext), 2):
                 intersect_flag = intersect_flag or \
                     segm_intersect(point1[0:2], point2[0:2],
-                                    self.chamb_ext[i], self.chamb_ext[i+1])
+                                   self.chamb_ext[i], self.chamb_ext[i+1])
         return intersect_flag
 
     def check_plates_intersect(self, point1, point2):
         # do not check intersection when particle is outside beamlines
         if point2[0] < self.r_dict['aim1'][0]-0.05 and \
-            point1[1] < self.r_dict['port'][1]:
+           point1[1] < self.r_dict['port'][1]:
             return False, 'none'
         segment_coords = np.array([point1, point2])
         for key in self.plates_edges.keys():
@@ -344,7 +344,7 @@ class Geometry():
             if (key in ['A1', 'B1', 'A2', 'B2'] and
                 point1[1] > self.r_dict['port'][1]) or \
                 (key in ['A3', 'B3', 'A4', 'B4'] and
-                point2[0] > self.r_dict['aim1'][0]-0.05):
+                 point2[0] > self.r_dict['aim1'][0]-0.05):
                 # check intersection
                 if segm_poly_intersect(self.plates_edges[key][0],
                                        segment_coords) or \
@@ -418,12 +418,12 @@ class Geometry():
                                               angles, beamline_angles)
                 r_det[i_slit, j, :] += self.r_dict['slit']
             if n_det//2 - i_slit == 0:
-                 # add coords of the center of the central detector
-                 self.add_coords('det', r_det[i_slit, 0, :], 0, [0, 0])
+                # add coords of the center of the central detector
+                self.add_coords('det', r_det[i_slit, 0, :], 0, [0, 0])
 
         # calculate normal to slit plane:
         det_plane_n = np.cross(r_det[0, 0, :] - r_det[0, 1, :],
-                                r_det[0, 0, :] - r_det[0, 2, :])
+                               r_det[0, 0, :] - r_det[0, 2, :])
         det_plane_n = det_plane_n/np.linalg.norm(det_plane_n)
 
         # create polygon, which contains all slits (slits spot):
@@ -1001,7 +1001,8 @@ def pass_to_slits(tr, dt, E, B, geom, target='slit', timestep_divider=10,
         RV_new = runge_kutt(k, RV_old, tr.dt1, E_local, B_local)
         RV_old = RV_new
         i_steps += 1
-        if not (True in tr.IntersectGeometrySec.values() or tr.B_out_of_bounds):
+        if not (True in tr.IntersectGeometrySec.values() or
+                tr.B_out_of_bounds):
             fan_list.append(tr.RV_sec)
     print('\nPrecise fan calculated')
 
@@ -1405,7 +1406,8 @@ def read_E(beamline, geom, dirname='elecfield'):
         edges_list = np.array(edges_list)
         # rotate plates edges
         for i in range(edges_list.shape[0]):
-            edges_list[i, :] = rotate3(edges_list[i, :], angles, beamline_angles)
+            edges_list[i, :] = rotate3(edges_list[i, :],
+                                       angles, beamline_angles)
         # shift coords center and put into a dictionary
         edges_dict[plts_name] = np.array([edges_list[0:4, :] + r_new,
                                           edges_list[4:, :] + r_new])
@@ -1475,7 +1477,7 @@ def read_B(config, dirname='tj2lib', interp=True):
 
     # plot B stream
     hbplot.plot_B_stream(B, volume_corner1, volume_corner2, resolution, grid,
-                          plot_sep=True)
+                         plot_sep=True)
 
     x = np.arange(volume_corner1[0], volume_corner2[0], resolution)
     y = np.arange(volume_corner1[1], volume_corner2[1], resolution)
@@ -1498,85 +1500,6 @@ def read_B(config, dirname='tj2lib', interp=True):
         rho_interp = rho
 
     return B_list, rho_interp
-
-
-# %% poloidal field coils
-def import_PFcoils(filename):
-    ''' import a dictionary with poloidal field coils parameters
-    {'NAME': (x center, y center, width along x, width along y [m],
-               current [MA-turn], N turns)}
-    Andreev, VANT 2014, No.3
-    '''
-    d = {}  # defaultdict(list)
-    with open(filename) as f:
-        for line in f:
-            if line[0] == '#':
-                continue
-            lineList = line.split(', ')
-            key, val = lineList[0], tuple([float(i) for i in lineList[1:]])
-            d[key] = val
-    return d
-
-
-def import_PFcur(filename, pf_coils):
-    '''
-    Creates dictionary with coils names and currents from TOKAMEQ file
-    :param filename: Tokameqs filename
-    :param coils: coil dict (we only take keys)
-    :return: PF dictianary with currents
-    '''
-    with open(filename, 'r') as f:
-        data = f.readlines()  # read tokameq file
-    PF_dict = {}  # Here we will store coils names and currents
-    pf_names = list(pf_coils)  # get coils names
-    n_coil = 0  # will be used for getting correct coil name
-    for i in range(len(data)):
-        if data[i].strip() == 'External currents:':
-            n_line = i + 2  # skip 2 lines and read from the third
-            break
-    while float(data[n_line].strip().split()[3]) != 0:
-        key = pf_names[n_coil]
-        val = data[n_line].strip().split()[3]
-        PF_dict[key] = float(val)
-        n_line += 1
-        n_coil += 1
-
-    return PF_dict
-
-
-# %%
-def import_Bflux(filename):
-    ''' import magnetic flux from Tokameq file'''
-    with open(filename, 'r') as f:
-        data = f.readlines()
-
-    # R coordinate corresponds to X, Z coordinate corresponds to Y
-    NrNz = []
-    for i in data[2].strip().split():
-        if i.isdigit():
-            NrNz.append(i)
-    Nx = int(NrNz[0]) + 1
-    Ny = int(NrNz[1]) + 1
-
-    for i in range(len(data)):
-        if ' '.join(data[i].strip().split()[:4]) == 'Flux at the boundary':
-            bound_flux = float(data[i].strip().split()[-1])
-        if data[i].strip() == 'Poloidal flux F(r,z)':
-            index = i
-
-    x_vals = [float(r) for r in data[index+1].strip().split()[1:]]
-    x_vals = np.array(x_vals)
-
-    Psi_data = [i.strip().split() for i in data[index+2:index+2+Ny]]
-    Psi_vals = []
-    y_vals = []
-    for line in Psi_data:
-        y_vals.append(float(line[0]))
-        Psi_vals.append([float(j) for j in line[1:]])
-
-    y_vals = np.array(y_vals)
-    Psi_vals = np.array(Psi_vals)
-    return Psi_vals, x_vals, y_vals, bound_flux
 
 
 # %%
@@ -1640,10 +1563,35 @@ def save_traj2dat(traj_list, save_fan=False, dirname='output/',
     for tr in traj_list:
         # save primary
         fname = dirname + 'E{:.0f}_U{:.0f}_prim.dat'.format(tr.Ebeam, tr.U['A2'])
-        np.savetxt(fname, tr.RV_prim[:, 0:3]*1000, fmt=fmt, delimiter=delimiter)  # [mm]
+        np.savetxt(fname, tr.RV_prim[:, 0:3]*1000,
+                   fmt=fmt, delimiter=delimiter)  # [mm]
         # save secondary
         fname = dirname + 'E{:.0f}_U{:.0f}_sec.dat'.format(tr.Ebeam, tr.U['A2'])
-        np.savetxt(fname, tr.RV_sec[:, 0:3]*1000, fmt=fmt, delimiter=delimiter)
+        np.savetxt(fname, tr.RV_sec[:, 0:3]*1000,
+                   fmt=fmt, delimiter=delimiter)
+
+
+# %%
+def save_radref(traj_list, Ebeam, rho_interp, dirname='radref/',
+                fmt='%.2f', delimiter=' '):
+    '''
+    save radial reference for a certain energy
+    '''
+    fname = dirname + 'radref_E{}.dat'.format(int(Ebeam))
+    # E, UA2, rho, x, y, z, x_reflected, y_reflected, UB2, UA3, UB3
+    radref = np.empty([0, 11])
+    for tr in traj_list:
+        if tr.Ebeam == Ebeam:
+            x, y, z = tr.RV_sec[0, :3]
+            xyz_refl = reflect(tr.RV_sec[0, :3])
+            radref_temp = np.array([Ebeam, tr.U['A2'],
+                                    rho_interp(tr.RV_sec[0, :3])[0], x, y, z,
+                                    xyz_refl[0], xyz_refl[1],
+                                    tr.U['B2'], tr.U['A3'], tr.U['B3']])
+            radref = np.vstack([radref, radref_temp])
+    np.savetxt(fname, radref, fmt=fmt, delimiter=delimiter)
+    print('radref E={} saved'.format(int(Ebeam)))
+
 
 # %%
 def save_png(fig, name, save_dir='output'):
