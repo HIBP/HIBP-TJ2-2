@@ -1549,7 +1549,7 @@ def read_traj_list(fname, dirname='output'):
     '''
     import list of Traj objects from .pkl file
     '''
-    with open(dirname + '/'+fname, 'rb') as f:
+    with open(dirname + '/' + fname, 'rb') as f:
         traj_list = pc.load(f)
     return traj_list
 
@@ -1573,22 +1573,28 @@ def save_traj2dat(traj_list, save_fan=False, dirname='output/',
 
 # %%
 def save_radref(traj_list, Ebeam, rho_interp, dirname='radref/',
-                fmt='%.2f', delimiter=' '):
+                fmt='%.3f', delimiter=' '):
     '''
     save radial reference for a certain energy
     '''
     fname = dirname + 'radref_E{}.dat'.format(int(Ebeam))
-    # E, UA2, rho, x, y, z, x_reflected, y_reflected, UB2, UA3, UB3
+    # E, UA2, rho, x_reflected, y_reflected, x, y, z, UB2, UA3, UB3
     radref = np.empty([0, 11])
     for tr in traj_list:
         if tr.Ebeam == Ebeam:
             x, y, z = tr.RV_sec[0, :3]
             xyz_refl = reflect(tr.RV_sec[0, :3])
             radref_temp = np.array([Ebeam, tr.U['A2'],
-                                    rho_interp(tr.RV_sec[0, :3])[0], x, y, z,
-                                    xyz_refl[0], xyz_refl[1],
+                                    rho_interp(tr.RV_sec[0, :3])[0],
+                                    xyz_refl[0], xyz_refl[1], x, y, z,
                                     tr.U['B2'], tr.U['A3'], tr.U['B3']])
             radref = np.vstack([radref, radref_temp])
+    # set rho<0 at HFS
+    distances = radref[:-1, 2] - radref[1:, 2]
+    index = np.argwhere(distances < 0)[0][0]
+    radref[:index+1, 2] = radref[:index+1, 2] * np.sign(radref[0, 1])
+    radref[index+1:, 2] = radref[index+1:, 2] * np.sign(radref[-1, 1])
+    # save to file
     np.savetxt(fname, radref, fmt=fmt, delimiter=delimiter)
     print('radref E={} saved'.format(int(Ebeam)))
 

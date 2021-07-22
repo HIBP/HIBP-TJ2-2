@@ -13,49 +13,12 @@ import copy
 import time
 
 # %% set up main parameters
-# initial beam energy range
-dEbeam = 20.
-Ebeam_range = np.arange(132., 132. + dEbeam, dEbeam)  # [keV]
-
 # choose analyzer number
 analyzer = 1
 
 # magnetic configuration
 config = '100_44_64'
 print('\nShot parameters: config ' + config)
-
-# set up scanning voltage
-input_fname = 'input//II_a2_b2_a3_b3_49873.dat'
-NA2_points = 25
-if input_fname != '':
-    exp_voltages = np.loadtxt(input_fname)
-    indexes = np.linspace(1, exp_voltages.shape[0]-1, NA2_points, dtype=int)
-# UA2 voltages
-UA2min, UA2max, dUA2 = -9., 5., 2.
-
-optimizeB2 = False
-optimizeA3B3 = False
-pass2AN = True
-save_radref = False
-
-if optimizeB2:
-    optimizeA3B3 = True
-    target = 'aim1'
-    # A2 plates voltage
-    dUA2 = 2.
-    UA2_range = np.arange(UA2min, UA2max+dUA2, dUA2)
-    # UA2_range = np.linspace(UA2min, UA2max, NA2_points)  # [kV]
-    eps_xy, eps_z = 1e-3, 1e-3
-else:
-    target = 'aim1'
-    UA2_range = exp_voltages[indexes, 1]
-    UB2_range = exp_voltages[indexes, 2]
-    eps_xy, eps_z = 1e-3, 1.
-if not optimizeA3B3:
-    target = 'aim1'
-    UA3_range = exp_voltages[indexes, 3]
-    UB3_range = exp_voltages[indexes, 4]
-    eps_xy, eps_z = 1e-3, 1.
 
 # timestep [sec]
 dt = 0.4e-7  # 0.7e-7
@@ -65,27 +28,25 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # A1 and B1 plates voltages
-UA1, UB1 = 0.1, 0.75
+UA1, UB1 = 0.1, 0.75  # [kV]
+
+# UA2 voltages
+UA2min, UA2max, dUA2 = -9., 5., 2.
 
 # B2 plates voltage
-UB2 = 2.0  # [kV]
-dUB2 = 35.0  # [kV/m]
+UB2, dUB2 = 2.0, 35.0  # [kV], [kV/m]
 
 # B3 voltages
-UB3 = 0.0  # [kV]
-dUB3 = -25.0  # [kV/m]
+UB3, dUB3 = 0.0, -25.0  # [kV], [kV/m]
 
 # A3 voltages
-UA3 = 0.0  # [kV]
-dUA3 = -25.0  # [kV/m]
+UA3, dUA3 = 0.0, -25.0  # [kV], [kV/m]
 
 # A4 voltages
-UA4 = 0.0  # [kV]
-dUA4 = 2.0  # [kV/m]
+UA4, dUA4 = 0.0, 2.0  # [kV], [kV/m]
 
 # B4 voltages
-UB4 = 0.0  # [kV]
-dUB4 = 2.0  # [kV/m]
+UB4, dUB4 = 0.0, 2.0  # [kV], [kV/m]
 
 # %% Define Geometry
 geomTJ2 = defgeom.define_geometry(config, analyzer=analyzer)
@@ -146,15 +107,59 @@ else:
     print('\nNO Analyzer')
 
 # %% Optimize Primary Beamline
-if optimizeB2:
-    print('\n Primary beamline optimization')
-else:
-    print('\n Calculating primary beamline')
-t1 = time.time()
 # define list of trajectories that hit r_aim
 traj_list_B2 = []
-# main loop
+# initial beam energy range
+dEbeam = 4.
+Ebeam_range = np.arange(150., 150. + dEbeam, dEbeam)  # [keV]
+
+# set flags
+optimizeB2 = False
+optimizeA3B3 = False
+pass2AN = True
+save_radref = True
+
 for Ebeam in Ebeam_range:
+    t1 = time.time()
+    # set up scanning voltage
+    if Ebeam < 93.:
+        shot = '49858'
+    elif Ebeam < 101.:
+        shot = '49861'
+    else:
+        shot = '49878'
+    # shot = '49873'
+    input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
+    print('INPUT FILE: ', input_fname)
+    NA2_points = 40
+    if input_fname != '':
+        exp_voltages = np.loadtxt(input_fname)
+        indexes = np.linspace(1, exp_voltages.shape[0]-1, NA2_points, dtype=int)
+
+    if optimizeB2:
+        optimizeA3B3 = True
+        target = 'aim1'
+        # A2 plates voltage
+        dUA2 = 2.
+        UA2_range = np.arange(UA2min, UA2max + dUA2, dUA2)
+        # UA2_range = np.linspace(UA2min, UA2max, NA2_points)  # [kV]
+        eps_xy, eps_z = 1e-3, 1e-3
+    else:
+        target = 'aim1'
+        UA2_range = exp_voltages[indexes, 1]
+        UB2_range = exp_voltages[indexes, 2]
+        eps_xy, eps_z = 1e-3, 1.
+    if not optimizeA3B3:
+        target = 'aim1'
+        UA3_range = exp_voltages[indexes, 3]
+        UB3_range = exp_voltages[indexes, 4]
+        eps_xy, eps_z = 1e-3, 1.
+    if optimizeB2:
+        print('\n Primary beamline optimization')
+    else:
+        print('\n Calculating primary beamline')
+
+    # UA2 loop
     for i in range(UA2_range.shape[0]):
         UA2 = UA2_range[i]
         if not optimizeB2:
@@ -166,16 +171,15 @@ for Ebeam in Ebeam_range:
         U_dict = {'A1': UA1, 'B1': UB1, 'A2': UA2, 'B2': UB2,
                   'A3': UA3, 'B3': UB3, 'A4': UA4, 'B4': UB4,
                   'an': Ebeam/(2*G)}
-
         # create new trajectory object
         tr = hb.Traj(q, m_ion, Ebeam, r0,
                      geomTJ2.angles['r0'][0], geomTJ2.angles['r0'][1],
                      U_dict, dt)
-
+        # optimize B2 voltage
         tr = hb.optimize_B2(tr, geomTJ2, UB2, dUB2, E, B, dt, stop_plane_n,
                             target, optimizeB2, eps_xy=eps_xy, eps_z=eps_z)
         UB2 = tr.U['B2']
-
+        # check geometry intersection
         if True in tr.IntersectGeometry.values():
             print('NOT saved, primary intersected geometry')
             continue
@@ -188,22 +192,21 @@ for Ebeam in Ebeam_range:
         else:
             print('NOT saved, sth wrong')
 
-t2 = time.time()
-if optimizeB2:
-    print('\n B2 voltage optimized, t = {:.1f} s\n'.format(t2-t1))
-else:
-    print('\n Trajectories to r_aim calculated, t = {:.1f} s\n'.format(t2-t1))
+    t2 = time.time()
+    if optimizeB2:
+        print('\n B2 voltage optimized, t = {:.1f} s\n'.format(t2-t1))
+    else:
+        print('\n Trajectories to r_aim calculated, t = {:.1f} s\n'.format(t2-t1))
 
 # %%
 traj_list_passed = copy.deepcopy(traj_list_B2)
 
 # %% Save traj list
-
 # hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict['aim'])
 
 # %% Additional plots
-
-hbplot.plot_grid(traj_list_passed, geomTJ2, config, marker_A2='')
+hbplot.plot_grid(traj_list_passed, geomTJ2, config,
+                 linestyle_A2='', marker_A2='')
 # hbplot.plot_fan(traj_list_passed, geomTJ2, 132., UA2, config,
 #                 plot_analyzer=False, plot_traj=True, plot_all=False)
 
@@ -270,7 +273,7 @@ hbplot.plot_scan(traj_list_an, geomTJ2, 132., config,
                  full_primary=False, plot_analyzer=True,
                  plot_det_line=True, subplots_vertical=True, scale=4)
 
-# %% Pass trajectory to the Analyzer
+# %% Pass trajectory to the Analyzer and find A4 voltage
 #     print('\n Optimizing entrance angle to Analyzer with A4')
 #     t1 = time.time()
 #     traj_list_a4 = []
@@ -294,8 +297,11 @@ hbplot.plot_scan(traj_list_an, geomTJ2, 132., config,
 
 # %% Save radref
 if save_radref:
-    hb.save_radref(traj_list_an, 132., rho_interp)
+    Elist = [tr.Ebeam for tr in traj_list_passed]
+    Elist = np.unique(Elist)
+    for Ebeam in Elist:
+        hb.save_radref(traj_list_passed, Ebeam, rho_interp)
 
 # %% Save list of trajectories
 
-# hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict['aim'])
+# hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict['aim1'])

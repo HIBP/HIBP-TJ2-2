@@ -6,55 +6,23 @@ import hibpplotlib as hbplot
 import copy
 
 # %% import trajectory lists
-if __name__ == '__main__':
-    traj_list = []
+config = '100_44_64'
+traj_list = []
 
-    # grid with alpha=30
-    names = ['E100-120_UA20-18_alpha30_beta-10_x260y-25z0.pkl',
-              'E140-160_UA2-3-24_alpha30_beta-10_x260y-25z0.pkl',
-              'E180-200_UA2-3-30_alpha30_beta-10_x260y-25z0.pkl',
-              'E220-240_UA2-3-30_alpha30_beta-10_x260y-25z0.pkl',
-              'E260-280_UA29-30_alpha30_beta-10_x260y-25z0.pkl',
-              'E300-300_UA224-30_alpha30_beta-10_x260y-25z0.pkl']
+# grid with alpha=30
+names = ['E92-152_UA2-9-2_alpha73_beta-12_x270y-45z-17.pkl',
+         'E150-150_UA2-8-2_alpha73_beta-12_x270y-45z-17.pkl']
 
-    # grid with alpha=30 y_aim=-10
-    # names = ['E60-80_UA23-12_alpha30_beta-10_x260y-10z0.pkl',
-    #          'E100-120_UA20-18_alpha30_beta-10_x260y-10z0.pkl',
-    #           'E140-160_UA2-3-24_alpha30_beta-10_x260y-10z0.pkl',
-    #           'E180-200_UA23-30_alpha30_beta-10_x260y-10z0.pkl',
-    #           'E220-240_UA218-33_alpha30_beta-10_x260y-10z0.pkl',
-    #           'E260-260_UA230-33_alpha30_beta-10_x260y-10z0.pkl']
-
-    # grid with alpha=30 y_aim=-15
-    # names = ['E80-80_UA23-9_alpha30_beta-10_x260y-15z0.pkl',
-    #           'E100-120_UA20-18_alpha30_beta-10_x260y-15z0.pkl',
-    #           'E140-160_UA2-3-24_alpha30_beta-10_x260y-15z0.pkl',
-    #           'E180-200_UA2-3-30_alpha30_beta-10_x260y-15z0.pkl',
-    #           'E220-240_UA29-33_alpha30_beta-10_x260y-15z0.pkl',
-    #           'E260-280_UA224-33_alpha30_beta-10_x260y-15z0.pkl']
-
-    # grid with alpha=20
-    # names = ['E100-120_UA2-3-18_alpha20_beta-10_x260y-25z0.pkl',
-    #           'E140-160_UA2-6-21_alpha20_beta-10_x260y-25z0.pkl',
-    #           'E180-200_UA2-9-18_alpha20_beta-10_x260y-25z0.pkl',
-    #           'E220-240_UA2-9-15_alpha20_beta-10_x260y-25z0.pkl',
-    #           'E260-280_UA23-18_alpha20_beta-10_x260y-25z0.pkl',
-    #           'E300-320_UA212-21_alpha20_beta-10_x260y-25z0.pkl']
-
-    for name in names:
-        traj_list += hb.read_traj_list(name, dirname='output/B1_I1')
+for name in names:
+    traj_list += hb.read_traj_list(name, dirname='output/'+config)
 
 # %%
-    traj_list_passed = copy.deepcopy(traj_list)
+traj_list_passed = copy.deepcopy(traj_list)
 
 # %% Save traj list
-    Btor = 1.0
-    Ipl = 1.0
-    r_aim = geomT15.r_dict['aim']
-    hb.save_traj_list(traj_list_passed, Btor, Ipl, r_aim)
+r_aim = geomTJ2.r_dict['aim1']
+hb.save_traj_list(traj_list_passed, config, r_aim)
 
 # %% Additonal plots
-
-    hbplot.plot_grid(traj_list_passed, geomT15, Btor, Ipl, marker_A2='')
-    # hbplot.plot_fan(traj_list_passed, geomT15, 240., UA2, Btor, Ipl,
-    #                 plot_analyzer=False, plot_traj=True, plot_all=True)
+hbplot.plot_grid(traj_list_passed, geomTJ2, config,
+                 linestyle_A2='', marker_A2='')
