@@ -27,6 +27,15 @@ dt = 0.4e-7  # 0.7e-7
 q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
+# beam energy
+Emin, Emax, dEbeam = 150., 150., 4.
+
+# set flags
+optimizeB2 = False
+optimizeA3B3 = False
+pass2AN = True
+save_radref = True
+
 # A1 and B1 plates voltages
 UA1, UB1 = 0.1, 0.75  # [kV]
 
@@ -110,14 +119,7 @@ else:
 # define list of trajectories that hit r_aim
 traj_list_B2 = []
 # initial beam energy range
-dEbeam = 4.
-Ebeam_range = np.arange(150., 150. + dEbeam, dEbeam)  # [keV]
-
-# set flags
-optimizeB2 = False
-optimizeA3B3 = False
-pass2AN = True
-save_radref = True
+Ebeam_range = np.arange(Emin, Emax + dEbeam, dEbeam)  # [keV]
 
 for Ebeam in Ebeam_range:
     t1 = time.time()
@@ -166,7 +168,7 @@ for Ebeam in Ebeam_range:
             UB2 = UB2_range[i]
         if not optimizeA3B3:
             UA3, UB3 = UA3_range[i], UB3_range[i]
-        print('\n\nE = {} keV; UA2 = {} kV\n'.format(Ebeam, UA2))
+        print('\n\nE = {} keV; UA2 = {:.2f} kV\n'.format(Ebeam, UA2))
         # dict of starting voltages
         U_dict = {'A1': UA1, 'B1': UB1, 'A2': UA2, 'B2': UB2,
                   'A3': UA3, 'B3': UB3, 'A4': UA4, 'B4': UB4,
@@ -202,7 +204,7 @@ for Ebeam in Ebeam_range:
 traj_list_passed = copy.deepcopy(traj_list_B2)
 
 # %% Save traj list
-# hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict['aim'])
+hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
 
 # %% Additional plots
 hbplot.plot_grid(traj_list_passed, geomTJ2, config,
@@ -303,5 +305,4 @@ if save_radref:
         hb.save_radref(traj_list_passed, Ebeam, rho_interp)
 
 # %% Save list of trajectories
-
-# hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict['aim1'])
+# hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])

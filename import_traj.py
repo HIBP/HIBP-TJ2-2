@@ -13,6 +13,10 @@ traj_list = []
 names = ['E92-152_UA2-9-2_alpha73_beta-12_x270y-45z-17.pkl',
          'E150-150_UA2-8-2_alpha73_beta-12_x270y-45z-17.pkl']
 
+# grid with alpha=30 5 cm up
+names = ['E92-148_UA2-9-2_alpha73_beta-12_x270y-40z-17.pkl',
+         'E150-150_UA2-8-2_alpha73_beta-12_x270y-40z-17.pkl']
+
 for name in names:
     traj_list += hb.read_traj_list(name, dirname='output/'+config)
 

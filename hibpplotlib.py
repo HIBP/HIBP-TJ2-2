@@ -686,7 +686,7 @@ def plot_scan(traj_list, geom, Ebeam, config, full_primary=False,
 
 
 # %%
-def plot_grid(traj_list, geom, config, reflect=True,
+def plot_grid(traj_list, geom, config, reflect=True, onlyE=False,
               linestyle_A2='--', linestyle_E='-',
               marker_A2='*', marker_E='p'):
     '''
@@ -754,7 +754,9 @@ def plot_grid(traj_list, geom, config, reflect=True,
                  linestyle=linestyle_E,
                  marker=marker_E,
                  label=str(int(Elist[i_E]))+' keV')
-
+    if onlyE:
+        ax1.legend()
+        return 0
     # make a grid of constant A2
     for i_A2 in range(0, N_A2, 1):
         k = -1
