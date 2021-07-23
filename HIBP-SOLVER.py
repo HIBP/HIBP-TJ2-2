@@ -28,19 +28,20 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # beam energy
-Emin, Emax, dEbeam = 150., 150., 4.
+Emin, Emax, dEbeam = 132., 132., 4.
 
 # set flags
 optimizeB2 = False
-optimizeA3B3 = False
+optimizeA3B3 = True
 pass2AN = True
-save_radref = True
+save_radref = False
 
 # A1 and B1 plates voltages
 UA1, UB1 = 0.1, 0.75  # [kV]
 
 # UA2 voltages
 UA2min, UA2max, dUA2 = -9., 5., 2.
+NA2_points = 12
 
 # B2 plates voltage
 UB2, dUB2 = 2.0, 35.0  # [kV], [kV/m]
@@ -133,7 +134,6 @@ for Ebeam in Ebeam_range:
     # shot = '49873'
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
     print('INPUT FILE: ', input_fname)
-    NA2_points = 40
     if input_fname != '':
         exp_voltages = np.loadtxt(input_fname)
         indexes = np.linspace(1, exp_voltages.shape[0]-1, NA2_points, dtype=int)
@@ -204,7 +204,7 @@ for Ebeam in Ebeam_range:
 traj_list_passed = copy.deepcopy(traj_list_B2)
 
 # %% Save traj list
-hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
+# hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
 
 # %% Additional plots
 hbplot.plot_grid(traj_list_passed, geomTJ2, config,

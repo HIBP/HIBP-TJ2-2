@@ -6,32 +6,32 @@ import copy
 # %%
 ''' pass trajectories to different slits
 '''
-Ebeam = 240.
-UA2 = 9.0
+Ebeam = 132.
+UA2 = -1.9
 
 n_slits = 7
 # add slits to Geometry
 # geomT15.add_slits(n_slits=n_slits, slit_dist=0.01, slit_w=5e-3,
 #                   slit_l=0.1)  # -20.)
-r_slits = geomT15.slits_edges
-rs = geomT15.r_dict['slit']
+r_slits = geomTJ2.slits_edges
+rs = geomTJ2.r_dict['slit']
 # calculate normal to slit plane
-slit_plane_n = geomT15.slit_plane_n
+slit_plane_n = geomTJ2.slit_plane_n
 
 # %%
-traj_list_copy = copy.deepcopy(traj_list_a3b3)
-# traj_list_copy = copy.deepcopy(traj_list_passed)
+# traj_list_copy = copy.deepcopy(traj_list_a3b3)
+traj_list_copy = copy.deepcopy(traj_list_passed)
 
 # %%
 print('\n*** Passing fan to {} slits'.format(n_slits))
 for tr in traj_list_copy:
-    if tr.Ebeam == Ebeam and tr.U[0] == UA2:
-        print('\nEb = {}, UA2 = {}'.format(tr.Ebeam, tr.U[0]))
+    if abs(tr.Ebeam - Ebeam) < 0.1 and abs(tr.U['A2'] - UA2) < 0.1:
+        print('\nEb = {}, UA2 = {}'.format(tr.Ebeam, tr.U['A2']))
     else:
         continue
 
-    tr = hb.pass_to_slits(tr, dt, E, B, geomT15, timestep_divider=5)
+    tr = hb.pass_to_slits(tr, dt, E, B, geomTJ2, timestep_divider=5)
     break
 
 # %% plot trajectories
-hbplot.plot_traj_toslits(tr, geomT15, Btor, Ipl, plot_fan=True)
+hbplot.plot_traj_toslits(tr, geomTJ2, config, plot_fan=True)

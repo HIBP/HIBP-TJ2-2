@@ -135,7 +135,7 @@ def define_geometry(config, analyzer=1):
     for key in geom.r_dict.keys():
         # shift along X, Y or Z axis
         geom.r_dict[key][0] += 0.0
-        geom.r_dict[key][1] += 0.0  # 0.05
+        geom.r_dict[key][1] += 0.05  # 0.0
         geom.r_dict[key][2] += 0.0
 
     return geom

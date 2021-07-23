@@ -857,7 +857,7 @@ def plot_grid_a3b3(traj_list, geom, config,
 
 
 # %%
-def plot_traj_toslits(tr, geom, config, plot_fan=True, plot_flux=True):
+def plot_traj_toslits(tr, geom, config, plot_fan=True):
 
     fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
     # fig, (ax1, ax3) = plt.subplots(nrows=1, ncols=2)
@@ -912,11 +912,6 @@ def plot_traj_toslits(tr, geom, config, plot_fan=True, plot_flux=True):
                      markerfacecolor='white')
             ax3.plot(fan_tr[0, 2], fan_tr[0, 1], 'o', color=c,
                      markerfacecolor='white')
-
-    # plot magnetic flux lines
-    if plot_flux:
-        Psi_vals, x_vals, y_vals, bound_flux = hb.import_Bflux('1MA_sn.txt')
-        ax1.contour(x_vals, y_vals, Psi_vals, 100)
 
 
 # %%

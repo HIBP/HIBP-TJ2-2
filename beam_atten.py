@@ -1,3 +1,6 @@
+'''
+Calculate HIBP beam attenuation in TJ-II stellarator
+'''
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -8,24 +11,6 @@ import matplotlib.colors as colors
 
 
 # %%
-# Calculate HIBP beam attenuation in T-15MD tokamak
-def egg_fun(x, const=0.8):
-    '''function transforms ellipse to egg-like curve
-    '''
-    return (1 + const*x)
-
-
-def get_rho(x, y, z, r_pl=0.65, elon=1.7, R=1.5):
-    '''
-    function returns normalized radius
-    R - major radius
-    elon - elongation along y
-    r_pl - plasma radius along x
-    '''
-    x1 = np.sqrt(x**2 + z**2)
-    return np.sqrt((x1-R)**2 + egg_fun(x1-R)*(y/elon)**2) / r_pl
-
-
 def ne(rho, ne0):
     '''
     plasma electron density profile
@@ -45,7 +30,7 @@ def Te(rho, Te0):
 #    return Te0*rho/rho
 
 
-def integrate_traj(tr, ne0, Te0, sigmaEff12, sigmaEff23):
+def integrate_traj(tr, get_rho, ne0, Te0, sigmaEff12, sigmaEff23):
     '''
     ne0, Te0 - central values
     sigmaV - interpolant over Te
@@ -72,8 +57,8 @@ def integrate_traj(tr, ne0, Te0, sigmaEff12, sigmaEff23):
         x1, y1, z1 = tr.RV_prim[i-1, 0], tr.RV_prim[i-1, 1], tr.RV_prim[i-1, 2]
         x2, y2, z2 = tr.RV_prim[i, 0], tr.RV_prim[i, 1], tr.RV_prim[i, 2]
 
-        rho1 = get_rho(x1, y1, z1, r_pl=r_plasma, elon=elon, R=R)
-        rho2 = get_rho(x2, y2, z2, r_pl=r_plasma, elon=elon, R=R)
+        rho1 = get_rho(x1, y1, z1)
+        rho2 = get_rho(x2, y2, z2)
 
         if (rho1 <= 1) & (rho2 <= 1):
             dl = np.linalg.norm([x2-x1, y2-y1, z2-z1])
@@ -126,7 +111,8 @@ def fMaxwell(v, T, m):
     if T < 0.01:
         return 0
     else:
-        return ((m/(2*np.pi*T*1.6e-19))**1.5)*4*np.pi*v*v*np.exp(-m*v*v/(2*T*1.6e-19))  # T in [eV]
+        return ((m / (2 * np.pi * T * 1.6e-19))**1.5) * 4*np.pi * v * v * \
+            np.exp(-m * v * v / (2 * T * 1.6e-19))  # T in [eV]
 
 
 def genMaxwell(vtarget, Ttarget, m_target, vbeam, m_beam):
@@ -151,7 +137,7 @@ def dSigmaEff(vtarget, Ttarget, m_target, sigma, vbeam, m_beam):
     v = abs(vtarget-vbeam)
     try:
         sigmaEff = genMaxwell(vtarget, Ttarget, m_target, vbeam, m_beam) * \
-             v * sigma((0.5*m_target*v**2)/1.6e-19)
+             v * sigma((0.5 * m_target * v**2) / 1.6e-19)
     except ValueError:
         sigmaEff = genMaxwell(vtarget, Ttarget, m_target, vbeam, m_beam) * \
              v * 0.0
@@ -168,15 +154,10 @@ if __name__ == '__main__':
     kB = 1.38064852e-23  # Boltzman [J/K]
     m_e = 9.10938356e-31  # electron mass [kg]
     m_p = 1.6726219e-27  # proton mass [kg]
-    E = 240.0  # beam energy [keV]
+    E = 132.0  # beam energy [keV]
 
-    geom = geomT15
-    r_plasma = 0.65  # geom.r_plasma
-    elon = geom.elon
-    R = 1.45  # geom.R
-
-    Btor = 1.0  # [T]
-    Ipl = 1.0  # [MA]
+    geom = geomTJ2
+    config = '100_44_64'
 
     ne0 = 5  # 1.5  # [x10^19 m-3]
     Te0 = 2.0  # [keV]
@@ -188,15 +169,18 @@ if __name__ == '__main__':
 #    traj_list = hb.ReadTrajList(filename, dirname='output')
 
     # %% LOAD IONIZATION RATES
-    if tr_list[0].m/m_p > 200.:
-        ion = 'Tl'
-    else:
-        ion = 'Cs'
+    ion = 'Cs'
 
     # <sigma*v> for Ion+ + e -> Ion2+
     filename = 'D:\\Philipp\\Cross_sections\\' + ion + '\\rate' + ion + \
         '+_e_' + ion + '2+.txt'
     sigmaV12_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [m^3/s]
+
+    # <sigma*v> for Ion+ + e -> IOn3+
+    filename = 'D:\\NRCKI\\Cross_sections\\' + ion + '\\rate' + ion + \
+        '+_e_' + ion + '3+.txt'
+    sigmaV13_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
+    sigmaV13_e[:, 1] = sigmaV13_e[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
     # <sigma*v> for Ion2+ + e -> Ion3+
     filename = 'D:\\Philipp\\Cross_sections\\' + ion + '\\rate' + ion + \
@@ -214,8 +198,9 @@ if __name__ == '__main__':
     # %%
     Itot = np.zeros([0, 12])
     for tr in tr_list:
-        pass
-        I_integrated = integrate_traj(tr, ne0, Te0, sigmaEff12_e_interp,
+        I_integrated = integrate_traj(tr, rho_interp, ne0, Te0,
+                                      sigmaEff12_e_interp,
+                                      sigmaEff13_e_interp,
                                       sigmaEff23_e_interp)
         Itot = np.vstack([Itot, I_integrated[np.newaxis, :]])
 
@@ -250,17 +235,6 @@ if __name__ == '__main__':
 
     ax1.set_title('Ebeam={} keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
                   .format(E, UA2_min,  UA2_max, Btor, Ipl))
-
-    # plot plasma elipse
-    x_plus = np.arange(0.0, r_plasma+0.01, 0.01)
-    y = np.c_[-elon*np.sqrt((r_plasma**2-x_plus**2) / egg_fun(x_plus)),
-              elon*np.sqrt((r_plasma**2-x_plus**2) / egg_fun(x_plus))]
-    plt.plot(1.5+np.c_[x_plus, x_plus], y, color='m', linestyle='-')
-
-    x_minus = np.arange(-r_plasma, 0.0, 0.01)
-    y = np.c_[-elon*np.sqrt((r_plasma**2-x_minus**2) / egg_fun(x_minus)),
-              elon*np.sqrt((r_plasma**2-x_minus**2) / egg_fun(x_minus))]
-    plt.plot(1.5+np.c_[x_minus, x_minus], y, color='m', linestyle='-')
 
     # %% plot grid of attenuation
     fig, ax1 = plt.subplots()
