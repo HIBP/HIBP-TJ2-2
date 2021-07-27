@@ -28,12 +28,12 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # beam energy
-Emin, Emax, dEbeam = 132., 132., 4.
+Emin, Emax, dEbeam = 172., 176., 4.
 
 # set flags
 optimizeB2 = False
 optimizeA3B3 = False
-pass2AN = True
+pass2AN = False
 save_radref = False
 
 # A1 and B1 plates voltages
@@ -41,7 +41,7 @@ UA1, UB1 = 0.1, 0.75  # [kV]
 
 # UA2 voltages
 UA2min, UA2max, dUA2 = -9., 5., 2.
-NA2_points = 36
+NA2_points = 40
 
 # B2 plates voltage
 UB2, dUB2 = 2.0, 35.0  # [kV], [kV/m]
@@ -125,12 +125,24 @@ Ebeam_range = np.arange(Emin, Emax + dEbeam, dEbeam)  # [keV]
 for Ebeam in Ebeam_range:
     t1 = time.time()
     # set up scanning voltage
-    if Ebeam < 93.:
-        shot = '49858'
-    elif Ebeam < 101.:
-        shot = '49861'
+    ## 18dec2019
+    # if Ebeam < 93.:
+    #     shot = '49858'
+    # elif Ebeam < 101.:
+    #     shot = '49861'
+    # else:
+    #     shot = '49878'
+    ## mar2020
+    if Ebeam == 92:
+        shot = '50561'
+    elif Ebeam == 96 or Ebeam == 100:
+        shot = '50559'
+    elif Ebeam == 120:
+        shot = '50553'
+    elif Ebeam == 168 or Ebeam == 172:
+        shot = '50504'
     else:
-        shot = '49878'
+        shot = '50497'
     # shot = '49873'
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
     print('INPUT FILE: ', input_fname)
@@ -205,10 +217,10 @@ for Ebeam in Ebeam_range:
 traj_list_passed = copy.deepcopy(traj_list_B2)
 
 # %% Save traj list
-# hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
+hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
 
 # %% Additional plots
-hbplot.plot_grid(traj_list_passed, geomTJ2, config,
+hbplot.plot_grid(traj_list_passed, geomTJ2, config, onlyE=True,
                  linestyle_A2='', marker_A2='')
 # hbplot.plot_fan(traj_list_passed, geomTJ2, 132., UA2, config,
 #                 plot_analyzer=False, plot_traj=True, plot_all=False)
