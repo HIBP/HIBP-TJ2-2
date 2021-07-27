@@ -647,12 +647,10 @@ def plot_scan(traj_list, geom, Ebeam, config, full_primary=False,
     colors = prop_cycle.by_key()['color']
 
     A2list = []
-    det_line = np.empty([0, 3])
 
     for tr in traj_list:
         if tr.Ebeam == Ebeam:
             A2list.append(tr.U['A2'])
-            det_line = np.vstack([det_line, tr.RV_sec[0, 0:3]])
             # plot primary
             tr.plot_prim(ax1, axes='XY', color='k', full_primary=full_primary)
             tr.plot_prim(ax2, axes='XZ', color='k', full_primary=full_primary)
@@ -672,6 +670,10 @@ def plot_scan(traj_list, geom, Ebeam, config, full_primary=False,
                 tr.plot_sec(ax2, axes='XZ', color=color_sec)
 
     if plot_det_line:
+        det_line = np.empty([0, 3])
+        for tr in traj_list:
+            if tr.Ebeam == Ebeam:
+                det_line = np.vstack([det_line, tr.RV_sec[0, 0:3]])
         # reflect detector line to HIBP plane
         for i in range(det_line.shape[0]):
             det_line[i, :] = hb.reflect(det_line[i, :])

@@ -48,7 +48,7 @@ def pde_solve_full(U, Uupper_plate, Ulower_plate, upper_plate_flag,
 # %%
 if __name__ == '__main__':
 
-    plts_name = 'B4'
+    plts_name = 'A2'
     save_data = True
 
     # define voltages [Volts]
@@ -59,6 +59,9 @@ if __name__ == '__main__':
     plts_center = np.array([0., 0., 0.])  # plates center
     # initially plates are parallel to XZ plane
     gamma = 0.  # gamma = 0. for A-plates, and -90. for B-plates
+    # if plates are flared, use these parameters
+    alpha_sw = 0.  # sweep angle [deg] for flared plates
+    l_sw = 0.  # length of a flared part
 
     # convert degrees to radians
     drad = np.pi/180.
@@ -87,6 +90,8 @@ if __name__ == '__main__':
         width = 0.1  # along Z [m]
         thick = 0.004  # [m]
         gap = 0.035  # distance between plates along Y [m]
+        alpha_sw = 7.5  # sweep angle [deg] for flared plates
+        l_sw = 0.05 / np.cos(np.radians(alpha_sw))  # length of a flared part
 
     elif plts_name == 'B2':
         beamline = 'prim'
@@ -166,11 +171,13 @@ if __name__ == '__main__':
         print('\n G = {}\n'.format(G))
 
     # set plates geometry
-    plts_geom = np.array([length, width, thick, gap])
+    plts_geom = np.array([length, width, thick, gap, l_sw])
+    plts_angles = np.array([gamma, alpha_sw])
 
     # Create mesh grid
     # lengths of the edges of the domain [m]
     r = np.array([length, gap, width])
+    r = hb.rotate(r, axis=(0, 0, 1), deg=alpha_sw)
     r = hb.rotate(r, axis=(1, 0, 0), deg=gamma)
     r = abs(r)
     border_x = round(2*r[0], 2)
@@ -209,10 +216,11 @@ if __name__ == '__main__':
     print('Solving for ' + plts_name)
     print('Geom: ', plts_geom)
     print('Gamma angle: ', gamma)
+    print('Sweep angle: ', alpha_sw)
 
     UP, LP, upper_plate_flag, lower_plate_flag = \
         hb.plate_flags(range_x, range_y, range_z, U,
-                       plts_geom, gamma, plts_center)
+                       plts_geom, plts_angles, plts_center)
 
 # %% solver
     t1 = time.time()
@@ -229,14 +237,15 @@ if __name__ == '__main__':
     # set zero E in the cells corresponding to plates
     Ex[upper_plate_flag], Ey[upper_plate_flag], Ez[upper_plate_flag] = 0, 0, 0
     Ex[lower_plate_flag], Ey[lower_plate_flag], Ez[lower_plate_flag] = 0, 0, 0
+    index = int(UP.shape[0]/2)
     if save_data and beamline == 'prim':
         hb.save_E(beamline, plts_name, Ex, Ey, Ez,
-                  gamma, plts_geom, domain, an_params,
-                  UP[4:], LP[4:])
+                  plts_angles, plts_geom, domain, an_params,
+                  UP[index:], LP[index:])
     elif save_data and beamline == 'sec':
         hb.save_E(beamline, plts_name, Ex, Ey, Ez,
-                  gamma, plts_geom, domain, an_params,
-                  UP[4:], LP[4:])
+                  plts_angles, plts_geom, domain, an_params,
+                  UP[index:], LP[index:])
     else:
         print('DATA NOT SAVED')
 

@@ -160,7 +160,7 @@ class Traj():
                 self.IntersectGeometrySec[plts_name] = True
 
             # find last point of the secondary trajectory
-            if (RV_new[0, 0] > 1.55) and (RV_new[0, 1] < 0.0):
+            if (RV_new[0, 0] > 1.55) and (RV_new[0, 1] < 0.8):
                 # intersection with the stop plane:
                 planeNormal = stop_plane_n
                 planePoint = r_aim
@@ -346,9 +346,9 @@ class Geometry():
                 (key in ['A3', 'B3', 'A4', 'B4'] and
                  point2[0] > self.r_dict['aim1'][0]-0.05):
                 # check intersection
-                if segm_poly_intersect(self.plates_edges[key][0],
+                if segm_poly_intersect(self.plates_edges[key][0][:4],
                                        segment_coords) or \
-                    segm_poly_intersect(self.plates_edges[key][1],
+                    segm_poly_intersect(self.plates_edges[key][1][:4],
                                         segment_coords):
                     return True, key
             else:
@@ -1192,21 +1192,37 @@ def segm_poly_intersect(polygon_coords, segment_coords):
 
 # %%
 def plate_flags(range_x, range_y, range_z, U,
-                plts_geom, gamma, plts_center):
+                plts_geom, plts_angles, plts_center):
 
-    length, width, thick, gap = plts_geom
+    length, width, thick, gap, l_sw = plts_geom
+    gamma, alpha_sw = plts_angles
+    r_sweep_up = np.array([-length/2 + l_sw, gap/2., 0])
+    r_sweep_lp = np.array([-length/2 + l_sw, -gap/2., 0])
 
-    # Geometry rotated in system based on central point between plates
+    # Geometry in system based on central point between plates
     # upper plate
     UP1 = np.array([-length/2., gap/2. + thick, width/2.])
     UP2 = np.array([-length/2., gap/2. + thick, -width/2.])
+    UP1sw = np.array([-length/2. + l_sw, gap/2. + thick, width/2.])
+    UP2sw = np.array([-length/2. + l_sw, gap/2. + thick, -width/2.])
     UP3 = np.array([length/2., gap/2. + thick, -width/2.])
     UP4 = np.array([length/2., gap/2. + thick, width/2.])
     UP5 = np.array([-length/2., gap/2., width/2.])
     UP6 = np.array([-length/2., gap/2., -width/2.])
+    UP5sw = np.array([-length/2. + l_sw, gap/2., width/2.])
+    UP6sw = np.array([-length/2. + l_sw, gap/2., -width/2.])
     UP7 = np.array([length/2., gap/2., -width/2.])
     UP8 = np.array([length/2., gap/2., width/2.])
-    UP_full = np.array([UP1, UP2, UP3, UP4, UP5, UP6, UP7, UP8])
+    if abs(alpha_sw) > 1e-2:
+        UP1 = UP1sw + rotate(UP1 - UP1sw, axis=(0, 0, 1), deg=-alpha_sw)
+        UP2 = UP2sw + rotate(UP2 - UP2sw, axis=(0, 0, 1), deg=-alpha_sw)
+        UP5 = UP5sw + rotate(UP5 - UP5sw, axis=(0, 0, 1), deg=-alpha_sw)
+        UP6 = UP6sw + rotate(UP6 - UP6sw, axis=(0, 0, 1), deg=-alpha_sw)
+        # points are sorted clockwise
+        UP_full = np.array([UP1sw, UP1, UP2, UP2sw, UP3, UP4,
+                            UP5sw, UP5, UP6, UP6sw, UP7, UP8])
+    else:
+        UP_full = np.array([UP1, UP2, UP3, UP4, UP5, UP6, UP7, UP8])
     UP_rotated = UP_full.copy()
     for i in range(UP_full.shape[0]):
         UP_rotated[i, :] = rotate(UP_rotated[i, :], axis=(1, 0, 0), deg=gamma)
@@ -1216,13 +1232,26 @@ def plate_flags(range_x, range_y, range_z, U,
     # lower plate
     LP1 = np.array([-length/2., -gap/2. - thick, width/2.])
     LP2 = np.array([-length/2., -gap/2. - thick, -width/2.])
+    LP1sw = np.array([-length/2. + l_sw, -gap/2. - thick, width/2.])
+    LP2sw = np.array([-length/2. + l_sw, -gap/2. - thick, -width/2.])
     LP3 = np.array([length/2., -gap/2. - thick, -width/2.])
     LP4 = np.array([length/2., -gap/2. - thick, width/2.])
     LP5 = np.array([-length/2., -gap/2., width/2.])
     LP6 = np.array([-length/2., -gap/2., -width/2.])
+    LP5sw = np.array([-length/2. + l_sw, -gap/2., width/2.])
+    LP6sw = np.array([-length/2. + l_sw, -gap/2., -width/2.])
     LP7 = np.array([length/2., -gap/2., -width/2.])
     LP8 = np.array([length/2., -gap/2., width/2.])
-    LP_full = np.array([LP1, LP2, LP3, LP4, LP5, LP6, LP7, LP8])
+    if abs(alpha_sw) > 1e-2:
+        LP1 = LP1sw + rotate(LP1 - LP1sw, axis=(0, 0, 1), deg=alpha_sw)
+        LP2 = LP2sw + rotate(LP2 - LP2sw, axis=(0, 0, 1), deg=alpha_sw)
+        LP5 = LP5sw + rotate(LP5 - LP5sw, axis=(0, 0, 1), deg=alpha_sw)
+        LP6 = LP6sw + rotate(LP6 - LP6sw, axis=(0, 0, 1), deg=alpha_sw)
+        # points are sorted clockwise
+        LP_full = np.array([LP1sw, LP1, LP2, LP2sw, LP3, LP4,
+                            LP5sw, LP5, LP6, LP6sw, LP7, LP8])
+    else:
+        LP_full = np.array([LP1, LP2, LP3, LP4, LP5, LP6, LP7, LP8])
     LP_rotated = LP_full.copy()
     for i in range(LP_full.shape[0]):
         LP_rotated[i, :] = rotate(LP_rotated[i, :], axis=(1, 0, 0), deg=gamma)
@@ -1251,6 +1280,9 @@ def plate_flags(range_x, range_y, range_z, U,
                     r = np.array([x, y, z]) - plts_center
                     # inverse rotation
                     r_rot = rotate(r, axis=(1, 0, 0), deg=-gamma)
+                    if r_rot[0] <= -length/2 + l_sw:
+                        r_rot = r_sweep_up + rotate(r_rot - r_sweep_up,
+                                                 axis=(0, 0, 1), deg=alpha_sw)
                     # define masks for upper and lower plates
                     upper_plate_flag[i, j, k] = (r_rot[0] >= -length/2.) and \
                         (r_rot[0] <= length/2.) and (r_rot[2] >= -width/2.) and \
@@ -1263,6 +1295,9 @@ def plate_flags(range_x, range_y, range_z, U,
                     r = np.array([x, y, z]) - plts_center
                     # inverse rotation
                     r_rot = rotate(r, axis=(1, 0, 0), deg=-gamma)
+                    if r_rot[0] <= -length/2 + l_sw:
+                        r_rot = r_sweep_lp + rotate(r_rot - r_sweep_lp,
+                                                 axis=(0, 0, 1), deg=-alpha_sw)
                     # define masks for upper and lower plates
                     lower_plate_flag[i, j, k] = (r_rot[0] >= -length/2.) and \
                         (r_rot[0] <= length/2.) and (r_rot[2] >= -width/2.) and \
@@ -1317,7 +1352,7 @@ def return_B(r, Bin):
     return Bout
 
 
-def save_E(beamline, plts_name, Ex, Ey, Ez, gamma, geom,
+def save_E(beamline, plts_name, Ex, Ey, Ez, plts_angles, plts_geom,
            domain, an_params, plate1, plate2, dirname='elecfield'):
     '''
     save Ex, Ey, Ez arrays to file
@@ -1336,10 +1371,10 @@ def save_E(beamline, plts_name, Ex, Ey, Ez, gamma, geom,
     # erases data from file before writing
     open(dirname + '/' + fname, 'w').close()
     with open(dirname + '/' + fname, 'w') as myfile:
-        myfile.write(np.array2string(geom)[1:-1] +
-                     ' # plate\'s length, width, thic and gap\n')
-        myfile.write(str(gamma) +
-                     ' # plate\'s gamma angle\n')
+        myfile.write(np.array2string(plts_geom)[1:-1] +
+                     ' # plate\'s length, width, thic, gap and l_sweeped\n')
+        myfile.write(np.array2string(plts_angles)[1:-1] +
+                     ' # plate\'s gamma and alpha_sweep angles\n')
         myfile.write(np.array2string(domain, max_line_width=200)[1:-1] +
                      ' # xmin, xmax, ymin, ymax, zmin, zmax, delta\n')
         if plts_name == 'an':
@@ -1383,7 +1418,9 @@ def read_E(beamline, geom, dirname='elecfield'):
     for filename in file_list:
         plts_name = filename[0:2]
         r_new = r_dict[plts_name]
-        angles = copy.deepcopy(geom.angles[plts_name])
+        # angles of plates, will be modified later
+        plts_angles = copy.deepcopy(geom.angles[plts_name])
+        # beamline angles
         beamline_angles = copy.deepcopy(geom.angles[plts_name])
         print('position', r_new)
 
@@ -1391,7 +1428,9 @@ def read_E(beamline, geom, dirname='elecfield'):
         print('\n Reading geometry {} ...'.format(plts_name))
 
         with open(dirname + '/' + filename, 'r') as f:
-            geometry = [float(i) for i in f.readline().split()[0:4]]
+            # read plates geometry, first remove comments '#', then convert to float
+            plts_geom = [float(i) for i in f.readline().split('#')[0].split()]
+            # read gamma angle
             gamma = float(f.readline().split()[0])
             # xmin, xmax, ymin, ymax, zmin, zmax, delta
             domain = [float(i) for i in f.readline().split()[0:7]]
@@ -1399,18 +1438,20 @@ def read_E(beamline, geom, dirname='elecfield'):
                 an_params = [float(i) for i in f.readline().split()[0:8]]
                 geom.an_params = np.array(an_params)
                 theta_an = geom.an_params[4]  # analyzer entrance angle
-                angles[0] = angles[0] - theta_an
+                plts_angles[0] = plts_angles[0] - theta_an
             for line in f:
+                # read plates edges, x,y,z coords
                 edges_list.append([float(i) for i in line.split()[0:3]])
 
         edges_list = np.array(edges_list)
         # rotate plates edges
         for i in range(edges_list.shape[0]):
             edges_list[i, :] = rotate3(edges_list[i, :],
-                                       angles, beamline_angles)
+                                       plts_angles, beamline_angles)
         # shift coords center and put into a dictionary
-        edges_dict[plts_name] = np.array([edges_list[0:4, :] + r_new,
-                                          edges_list[4:, :] + r_new])
+        index = int(edges_list.shape[0] / 2)
+        edges_dict[plts_name] = np.array([edges_list[0:index, :] + r_new,
+                                          edges_list[index:, :] + r_new])
 
         Ex = np.load(dirname + '/' + plts_name + '_Ex.npy')
         Ey = np.load(dirname + '/' + plts_name + '_Ey.npy')

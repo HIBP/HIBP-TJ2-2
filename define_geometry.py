@@ -29,7 +29,7 @@ def define_geometry(config, analyzer=1):
     geom.r_dict['port'] = np.array([xport, yport, zport])
 
     # distance from the injection port to the Alpha2 plates
-    dist_A2 = 0.243  # 0.552  # 0.2  # [m]
+    dist_A2 = 0.2435 - 0.0125  # 0.552  # 0.2  # [m]
     # distance from Alpha2 plates to the Beta2 plates
     dist_B2 = 0.188  # [m]
     # distance from Beta2 plates to the Beta1 plates
@@ -134,8 +134,8 @@ def define_geometry(config, analyzer=1):
 
     for key in geom.r_dict.keys():
         # shift along X, Y or Z axis
-        geom.r_dict[key][0] += 0.0
-        geom.r_dict[key][1] += 0.05  # 0.0
+        geom.r_dict[key][0] += 0.0  # 0.0025
+        geom.r_dict[key][1] += 0.0  # 0.05
         geom.r_dict[key][2] += 0.0
 
     return geom

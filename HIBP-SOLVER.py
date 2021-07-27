@@ -32,7 +32,7 @@ Emin, Emax, dEbeam = 132., 132., 4.
 
 # set flags
 optimizeB2 = False
-optimizeA3B3 = True
+optimizeA3B3 = False
 pass2AN = True
 save_radref = False
 
@@ -41,7 +41,7 @@ UA1, UB1 = 0.1, 0.75  # [kV]
 
 # UA2 voltages
 UA2min, UA2max, dUA2 = -9., 5., 2.
-NA2_points = 12
+NA2_points = 36
 
 # B2 plates voltage
 UB2, dUB2 = 2.0, 35.0  # [kV], [kV/m]
@@ -193,6 +193,7 @@ for Ebeam in Ebeam_range:
             print('\n Trajectory saved, UB2={:.2f} kV'.format(tr.U['B2']))
         else:
             print('NOT saved, sth wrong')
+        # traj_list_B2.append(tr)
 
     t2 = time.time()
     if optimizeB2:
