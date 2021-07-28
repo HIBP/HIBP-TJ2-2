@@ -335,16 +335,16 @@ class Geometry():
 
     def check_plates_intersect(self, point1, point2):
         # do not check intersection when particle is outside beamlines
-        if point2[0] < self.r_dict['aim1'][0]-0.05 and \
-           point1[1] < self.r_dict['port'][1]:
+        if point2[0] < self.r_dict['aim'][0]-0.05 and \
+           point1[1] < self.r_dict['port_in'][1]:
             return False, 'none'
         segment_coords = np.array([point1, point2])
         for key in self.plates_edges.keys():
             # check if a point in inside the beamline
             if (key in ['A1', 'B1', 'A2', 'B2'] and
-                point1[1] > self.r_dict['port'][1]) or \
+                point1[1] > self.r_dict['port_in'][1]) or \
                 (key in ['A3', 'B3', 'A4', 'B4'] and
-                 point2[0] > self.r_dict['aim1'][0]-0.05):
+                 point2[0] > self.r_dict['aim'][0]-0.05):
                 # check intersection
                 if segm_poly_intersect(self.plates_edges[key][0][:4],
                                        segment_coords) or \
@@ -1316,7 +1316,7 @@ def return_E(r, Ein, U, geom):
     '''
     Etotal = np.zeros(3)
     # do not check plates while particle is in plasma
-    if r[0] < geom.r_dict['aim'][0]-0.05 and r[1] < geom.r_dict['port'][1]:
+    if r[0] < geom.r_dict['aim'][0]-0.05 and r[1] < geom.r_dict['port_in'][1]:
         return Etotal
     # go through all the plates
     for key in geom.plates_edges.keys():
@@ -1632,7 +1632,11 @@ def save_radref(traj_list, Ebeam, rho_interp, dirname='radref/',
             radref = np.vstack([radref, radref_temp])
     # set rho<0 at HFS
     distances = radref[:-1, 2] - radref[1:, 2]
-    index = np.argwhere(distances < 0)[0][0]
+    mask = np.argwhere(distances < 0)
+    if mask.shape[0] == 0:
+        index = distances.shape[0]
+    else:
+        index = mask[0][0]
     radref[:index+1, 2] = radref[:index+1, 2] * np.sign(radref[0, 1])
     radref[index+1:, 2] = radref[index+1:, 2] * np.sign(radref[-1, 1])
     # save to file

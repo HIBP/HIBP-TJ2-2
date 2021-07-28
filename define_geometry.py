@@ -23,10 +23,10 @@ def define_geometry(config, analyzer=1):
     geom.angles.update(prim_angles)
 
     # coordinates of the injection port [m]
-    xport = 1.3268  # 1.5 - 0.1541
-    yport = 0.853
-    zport = 0.032
-    geom.r_dict['port'] = np.array([xport, yport, zport])
+    xport_in = 1.3268  # 1.5 - 0.1541
+    yport_in = 0.853
+    zport_in = 0.032
+    geom.r_dict['port_in'] = np.array([xport_in, yport_in, zport_in])
 
     # distance from the injection port to the Alpha2 plates
     dist_A2 = 0.2435 - 0.0125  # 0.552  # 0.2  # [m]
@@ -40,7 +40,7 @@ def define_geometry(config, analyzer=1):
     dist_r0 = 0.2
 
     # coordinates of the center of the ALPHA2 plates
-    geom.add_coords('A2', 'port', dist_A2, geom.angles['A2'])
+    geom.add_coords('A2', 'port_in', dist_A2, geom.angles['A2'])
     # coordinates of the center of the BETA2 plates
     geom.add_coords('B2', 'A2', dist_B2, geom.angles['B2'])
     # coordinates of the center of the BETA2 plates
@@ -51,18 +51,18 @@ def define_geometry(config, analyzer=1):
     geom.add_coords('r0', 'A1', dist_r0, geom.angles['r0'])
 
     # AIM position (BEFORE the Secondary beamline) [m]
-    xaim = 1.9012  # 2.408  # 1.9
-    yaim = -0.456
-    zaim = 0.046  # -0.116  # 0.0
-    r_aim = np.array([xaim, yaim, zaim])
-    geom.r_dict['aim'] = r_aim
+    # coordinates of the output port
+    xport_out = 1.9012  # 2.408  # 1.9
+    yport_out = -0.456
+    zport_out = 0.046  # -0.116  # 0.0
+    geom.r_dict['port_out'] = np.array([xport_out, yport_out, zport_out])
 
     # SECONDARY beamline geometry
     # alpha and beta angles of the SECONDARY beamline [deg]
     alpha_sec = 0.
     beta_sec = 15.5
     gamma_sec = 20.  # 17.
-    sec_angles = {'aim1': np.array([alpha_sec, beta_sec, gamma_sec]),
+    sec_angles = {'aim': np.array([alpha_sec, beta_sec, gamma_sec]),
                   'A3': np.array([alpha_sec, beta_sec, gamma_sec]),
                   'B3': np.array([alpha_sec, 4.84, gamma_sec]),
                   'A4': np.array([0.11, 3.95, 26.16]),
@@ -82,9 +82,9 @@ def define_geometry(config, analyzer=1):
     dist_s = 0.398
 
     # coordinates of the center of the new aim point
-    geom.add_coords('aim1', 'aim', dist_A3-0.1, geom.angles['A3'])
+    geom.add_coords('aim', 'port_out', dist_A3-0.1, geom.angles['A3'])
     # coordinates of the center of the ALPHA3 plates
-    geom.add_coords('A3', 'aim', dist_A3, geom.angles['A3'])
+    geom.add_coords('A3', 'port_out', dist_A3, geom.angles['A3'])
 
     geom.r_dict['B3'] = np.array([3.113, -0.418, -0.23])
     geom.r_dict['B4'] = np.array([3.772, -0.4645, -0.313])
@@ -108,7 +108,7 @@ def define_geometry(config, analyzer=1):
     print('\nPrimary beamline angles: ', geom.angles['r0'])
     print('Secondary beamline angles: ', geom.angles['A3'])
     print('r0 = ', np.round(geom.r_dict['r0'], 3))
-    print('r_aim = ', r_aim)
+    print('r_aim = ', np.round(geom.r_dict['aim'], 3))
     print('r_slit = ', np.round(geom.r_dict['slit'], 3))
 
     # TJ-II GEOMETRY
