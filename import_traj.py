@@ -1,3 +1,6 @@
+'''
+Import lists with precalculated trajectories
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import cycle
@@ -24,6 +27,14 @@ names = ['E92-104_UA2-5-3_alpha73_beta-12_x270y-45z-17.pkl',
          'E140-152_UA2-9-3_alpha73_beta-12_x270y-45z-17.pkl',
          'E156-168_UA2-9-3_alpha73_beta-12_x270y-45z-17.pkl',
          'E172-176_UA2-9-3_alpha73_beta-12_x270y-45z-17.pkl']
+
+# mar 2020 5 cm up
+names = ['E92-104_UA2-5-3_alpha73_beta-12_x270y-40z-17.pkl',
+         'E108-120_UA2-6-3_alpha73_beta-12_x270y-40z-17.pkl',
+         'E124-136_UA2-8-3_alpha73_beta-12_x270y-40z-17.pkl',
+         'E140-152_UA2-9-3_alpha73_beta-12_x270y-40z-17.pkl',
+         'E156-168_UA2-9-3_alpha73_beta-12_x270y-40z-17.pkl',
+         'E172-176_UA2-9-3_alpha73_beta-12_x270y-40z-17.pkl']
 
 # # grid with 5 cm up
 # names = ['E92-148_UA2-9-2_alpha73_beta-12_x270y-40z-17.pkl',
@@ -58,7 +69,7 @@ for name in names:
 traj_list_passed = copy.deepcopy(traj_list)
 
 # %% Save traj list
-r_aim = geomTJ2.r_dict['aim1']
+r_aim = geomTJ2.r_dict['aim']
 hb.save_traj_list(traj_list_passed, config, r_aim)
 
 # %% Additonal plots

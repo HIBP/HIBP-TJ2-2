@@ -1,3 +1,6 @@
+'''
+Heavy Ion Beam Probe partile tracing library
+'''
 import numpy as np
 import os
 import errno
@@ -15,17 +18,35 @@ import numba
 # %% define class for trajectories
 
 class Traj():
+    ''' Trajectory object
+    '''
 
     def __init__(self, q, m, Ebeam, r0, alpha, beta, U, dt=1e-7):
-        ''' class for trajectories
-        q - particle charge [Co]
-        m - particle mass [kg]
-        Ebeam - beam energy [keV]
-        r0 - initial position [m]
-        alpha - injection angle in XY plane [rad]
-        beta - injection angle in XZ plane [rad]
-        U - dict of voltages in [kV] keys=[A1 B1 A2 B2 A3 B3 an]
-        dt - timestep for RK algorithm [s]
+        '''
+
+        Parameters
+        ----------
+        q : float
+            particle charge [Co]
+        m : float
+            particle mass [kg]
+        Ebeam : float
+            beam energy [keV]
+        r0 : np.array
+            initial point of the trajectory [m]
+        alpha : float
+            injection angle in XY plane [rad]
+        beta : float
+            injection angle in XZ plane [rad]
+        U : dict
+            dict of voltages in [kV] keys=[A1 B1 A2 B2 A3 B3 an]
+        dt : float, optional
+            timestep for RK algorithm [s]. The default is 1e-7.
+
+        Returns
+        -------
+        None.
+
         '''
         self.q = q
         self.m = m

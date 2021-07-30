@@ -1,8 +1,27 @@
+'''
+Define main parameters of TJ-II HIBP-2 geometry
+'''
 import numpy as np
 import hibplib as hb
 
 
 def define_geometry(config, analyzer=1):
+    '''
+
+    Parameters
+    ----------
+    config : str
+        tj2 magnetic cofiguration, e.g. '100_44_64'
+    analyzer : int, optional
+        number of the Analyzer of HIBP2. The default is 1.
+
+    Returns
+    -------
+    geom : Geometry
+        Geometry object with a proper configuration.
+
+    '''
+
     geom = hb.Geometry()
 
     # plasma parameters
@@ -135,7 +154,7 @@ def define_geometry(config, analyzer=1):
     for key in geom.r_dict.keys():
         # shift along X, Y or Z axis
         geom.r_dict[key][0] += 0.0  # 0.0025
-        geom.r_dict[key][1] += 0.0  # 0.05
+        geom.r_dict[key][1] += 0.05  # 0.0
         geom.r_dict[key][2] += 0.0
 
     return geom

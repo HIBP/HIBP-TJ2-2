@@ -28,7 +28,7 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # beam energy
-Emin, Emax, dEbeam = 172., 176., 4.
+Emin, Emax, dEbeam = 156., 168., 4.
 
 # set flags
 optimizeB2 = False
