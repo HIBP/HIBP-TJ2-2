@@ -293,6 +293,54 @@ class Traj():
             ax.plot(i[:, index_X], i[:, index_Y], color=color)
 
 
+# %% define class for plates
+class Plates():
+    '''
+    object containing info on deflecting plates
+    '''
+
+    def __init__(self, name, beamline, edges, r=np.array([0, 0, 0])):
+        self.name = name
+        self.beamline = beamline
+        self.edges = edges
+        self.r = r
+        self.E = []
+
+    def rotate(self, angles, beamline_angles):
+        '''
+        rotate plates
+        '''
+        self.angles = angles
+        self.beamline_angles = beamline_angles
+        for i in range(self.edges.shape[0]):
+            self.edges[i, :] = rotate3(self.edges[i, :],
+                                       angles, beamline_angles)
+
+    def shift(self, r_new):
+        self.r += r_new
+        self.edges += r_new
+
+    def check_intersect(self, point1, point2):
+        '''
+        check intersection with a segment point1 -> point2
+        '''
+        segment_coords = np.array([point1, point2])
+        if segm_poly_intersect(self.edges[0][:4], segment_coords) or \
+           segm_poly_intersect(self.edges[1][:4], segment_coords):
+            return True
+        return False
+
+    def plot(self, ax, axes='XY'):
+        '''
+        plot plates
+        '''
+        index_X, index_Y = get_index(axes)
+        ax.fill(self.edges[0][:, index_X], self.edges[0][:, index_Y],
+                fill=False, hatch='\\', linewidth=2)
+        ax.fill(self.edges[1][:, index_X], self.edges[1][:, index_Y],
+                fill=False, hatch='/', linewidth=2)
+
+
 # %% define class for geometry
 class Geometry():
     '''
