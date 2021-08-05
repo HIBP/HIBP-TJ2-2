@@ -304,7 +304,6 @@ class Plates():
         self.beamline = beamline
         self.edges = edges
         self.r = r
-        self.E = []
 
     def rotate(self, angles, beamline_angles):
         '''
@@ -339,6 +338,94 @@ class Plates():
                 fill=False, hatch='\\', linewidth=2)
         ax.fill(self.edges[1][:, index_X], self.edges[1][:, index_Y],
                 fill=False, hatch='/', linewidth=2)
+
+
+class Analyzer(Plates):
+    '''
+    Analyzer object
+    '''
+
+    def add_slits(self, an_params):
+        ''' add slits and detector to Analyzer
+        n_slits - number of slits
+        slit_dist - distance between centers of the slits [m]
+        slit_w - slit width (along Y) [m]
+        slit_l - slit length (along Z)
+        '''
+        # define main parameters of the Analyzer
+        self.n_slits, self.slit_dist, self.slit_w, self.G, self.theta, \
+            self.XD, self.YD1, self.YD2 = an_params
+        self.n_slits = int(self.n_slits)
+        # length of the slit
+        slit_l = 0.1
+        # angles of the slits plane normal
+        slit_angles = np.array([self.theta, 0., 0.])
+        # coords of center of the central slit
+        rs = self.r
+        # define slits
+        r_slits, slit_plane_n, slits_spot = \
+            define_slits(rs, slit_angles, self.n_slits, self.slit_dist,
+                         self.slit_w, slit_l)
+        # save slits edges
+        self.slits_edges = r_slits
+        self.slit_plane_n = slit_plane_n
+        self.slits_spot = slits_spot
+        # define detector
+        n_det = self.n_slits
+        # set detector angles
+        det_angles = np.array([180. - self.theta, 0, 0])
+        r_det, det_plane_n, det_spot = \
+            define_slits(np.array([np.sqrt(self.XD**2 + (self.YD1 - self.YD2)**2), 0, 0]),
+                         det_angles, n_det, self.slit_dist, self.slit_dist,
+                         slit_l)
+        # save detector edges
+        self.det_edges = r_det
+        self.det_plane_n = det_plane_n
+        self.det_spot = det_spot
+
+    def rotate(self, angles, beamline_angles):
+        super().rotate(angles, beamline_angles)
+        for attr in [self.slits_edges, self.slit_plane_n, self.slit_spot,
+                     self.det_edges, self.det_plane_n, self.det_spot]:
+            if len(attr.shape) < 2:
+                attr = rotate3(attr, angles, beamline_angles)
+            else:
+                for i in range(attr.shape[0]):
+                    attr[i, :] = rotate3(attr[i, :], angles, beamline_angles)
+
+    def shift(self, r_new):
+        super().shift(r_new)
+        for attr in [self.slits_edges, self.slit_plane_n, self.slit_spot,
+                     self.det_edges, self.det_plane_n, self.det_spot]:
+            attr += r_new
+
+    def plot(self, ax, axes='XY', n_slit='all'):
+        # plot plates
+        super().plot(ax, axes=axes)
+        # plot slits
+        index_X, index_Y = get_index(axes)
+        if n_slit == 'all':
+            slits = range(self.slits_edges.shape[0])
+        else:
+            slits = [n_slit]
+        # set color cycler
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        colors = prop_cycle.by_key()['color']
+        colors = colors[:len(slits)]
+        colors = cycle(colors)
+
+        for edges in [self.slits_edges, self.det_edges]:
+            for i in slits:
+                c = next(colors)
+                # plot center
+                ax.plot(edges[i, 0, index_X], edges[i, 0, index_Y], '*', color=c)
+                # plot edges
+                ax.fill(edges[i, 1:, index_X], edges[i, 1:, index_Y], fill=False)
+        # plot spot
+        ax.fill(self.slits_spot[:, index_X], self.slits_spot[:, index_Y],
+                fill=False)
+        ax.fill(self.det_spot[:, index_X], self.det_spot[:, index_Y],
+                fill=False)
 
 
 # %% define class for geometry
@@ -444,7 +531,6 @@ class Geometry():
         slit_dist - distance between centers of the slits [m]
         slit_w - slit width (along Y) [m]
         slit_l - slit length (along Z)
-        slit_gamma - angle of ratation around X [deg]
         '''
         # angles of the slits plane normal
         slit_angles = copy.deepcopy(self.angles['an'])
@@ -551,14 +637,14 @@ class Geometry():
                         hatch='/', linewidth=2)
         # plot slits
         plot_slits(self.slits_edges, self.slits_spot, ax, axes=axes,
-                   n_slit=n_slit, color=color)
+                   n_slit=n_slit)
         # plot detector
         plot_slits(self.det_edges, self.det_spot, ax, axes=axes,
-                   n_slit=n_slit, color=color)
+                   n_slit=n_slit)
 
 
 # %%
-def plot_slits(r_slits, spot, ax, axes='XY', n_slit='all', color='g'):
+def plot_slits(r_slits, spot, ax, axes='XY', n_slit='all'):
     ''' plot slits contours
     '''
     index_X, index_Y = get_index(axes)
