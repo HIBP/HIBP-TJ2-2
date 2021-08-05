@@ -307,7 +307,7 @@ class Plates():
 
     def rotate(self, angles, beamline_angles):
         '''
-        rotate plates
+        rotate plates on angles around the axis with beamline_angles
         '''
         self.angles = angles
         self.beamline_angles = beamline_angles
@@ -316,6 +316,9 @@ class Plates():
                                        angles, beamline_angles)
 
     def shift(self, r_new):
+        '''
+        shift all the coordinates to r_new
+        '''
         self.r += r_new
         self.edges += r_new
 
@@ -384,6 +387,9 @@ class Analyzer(Plates):
         self.det_spot = det_spot
 
     def rotate(self, angles, beamline_angles):
+        '''
+        rotate all the coordinates around the axis with beamline_angles
+        '''
         super().rotate(angles, beamline_angles)
         for attr in [self.slits_edges, self.slit_plane_n, self.slit_spot,
                      self.det_edges, self.det_plane_n, self.det_spot]:
@@ -394,12 +400,18 @@ class Analyzer(Plates):
                     attr[i, :] = rotate3(attr[i, :], angles, beamline_angles)
 
     def shift(self, r_new):
+        '''
+        shift all the coordinates to r_new
+        '''
         super().shift(r_new)
         for attr in [self.slits_edges, self.slit_plane_n, self.slit_spot,
                      self.det_edges, self.det_plane_n, self.det_spot]:
             attr += r_new
 
     def plot(self, ax, axes='XY', n_slit='all'):
+        '''
+        plot analyzer
+        '''
         # plot plates
         super().plot(ax, axes=axes)
         # plot slits
@@ -414,18 +426,17 @@ class Analyzer(Plates):
         colors = colors[:len(slits)]
         colors = cycle(colors)
 
-        for edges in [self.slits_edges, self.det_edges]:
+        for edges, spot in zip([self.slits_edges, self.det_edges],
+                               [self.slits_spot, self.det_spot]):
             for i in slits:
                 c = next(colors)
                 # plot center
                 ax.plot(edges[i, 0, index_X], edges[i, 0, index_Y], '*', color=c)
                 # plot edges
                 ax.fill(edges[i, 1:, index_X], edges[i, 1:, index_Y], fill=False)
-        # plot spot
-        ax.fill(self.slits_spot[:, index_X], self.slits_spot[:, index_Y],
-                fill=False)
-        ax.fill(self.det_spot[:, index_X], self.det_spot[:, index_Y],
-                fill=False)
+            # plot spot
+            ax.fill(spot[:, index_X], spot[:, index_Y], fill=False)
+            ax.fill(spot[:, index_X], spot[:, index_Y], fill=False)
 
 
 # %% define class for geometry
