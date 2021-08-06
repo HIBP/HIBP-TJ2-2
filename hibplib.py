@@ -385,6 +385,15 @@ class Analyzer(Plates):
         self.det_edges = r_det
         self.det_plane_n = det_plane_n
         self.det_spot = det_spot
+        print('Analyzer with {} slits ok!'.format(self.n_slits))
+
+    def get_params(self):
+        print('n_slits = {}\nslit_dist = {}\nslit_width = {}'
+              .format(self.n_slits, self.slit_dist, self.slit_w))
+        print('G = {}\ntheta = {}\nXD = {}\nYD1 = {}\nYD2 = {}'
+              .format(self.G, self.theta, self.XD, self.YD1, self.YD2))
+        return(np.array([self.n_slits, self.slit_dist, self.slit_w, self.G,
+                         self.theta, self.XD, self.YD1, self.YD2]))
 
     def rotate(self, angles, beamline_angles):
         '''
