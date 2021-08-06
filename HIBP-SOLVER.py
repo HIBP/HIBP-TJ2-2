@@ -51,6 +51,7 @@ UB3, dUB3 = 0.0, -25.0  # [kV], [kV/m]
 
 # A3 voltages
 UA3, dUA3 = 0.0, -25.0  # [kV], [kV/m]
+if analyzer == 2: dUA3 = -dUA3
 
 # A4 voltages
 UA4, dUA4 = 0.0, 2.0  # [kV], [kV/m]
@@ -84,7 +85,7 @@ except FileNotFoundError:
 
 # load E for secondary beamline
 try:
-    E_sec = hb.read_plates('sec', geomTJ2, E)
+    hb.read_plates('sec', geomTJ2, E)
     print('\n Secondary Beamline loaded')
 except FileNotFoundError:
     print('\n Secondary Beamline NOT FOUND')
@@ -146,7 +147,6 @@ for Ebeam in Ebeam_range:
         optimizeA3B3 = True
         target = 'aim'
         # A2 plates voltage
-        dUA2 = 2.
         UA2_range = np.arange(UA2min, UA2max + dUA2, dUA2)
         # UA2_range = np.linspace(UA2min, UA2max, NA2_points)  # [kV]
         eps_xy, eps_z = 1e-3, 1e-3

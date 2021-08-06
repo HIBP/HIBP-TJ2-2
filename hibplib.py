@@ -1747,7 +1747,7 @@ def save_radref(traj_list, Ebeam, rho_interp, dirname='radref/',
 # %%
 def save_png(fig, name, save_dir='output'):
     '''
-    Saves picture as name.png
+    saves picture as name.png
     fig : array of figures to save
     name : array of picture names
     save_dir : directory used to store results
