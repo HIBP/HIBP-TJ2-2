@@ -5,6 +5,7 @@ import numpy as np
 import hibplib as hb
 
 
+# %%
 def define_geometry(config, analyzer=1):
     '''
 
@@ -41,7 +42,7 @@ def define_geometry(config, analyzer=1):
                    'B1': np.array([alpha_prim, beta_prim, gamma_prim]),
                    'B2': np.array([alpha_prim, beta_prim, gamma_prim]),
                    'A2': np.array([alpha_prim, beta_prim, gamma_prim])}
-    geom.angles.update(prim_angles)
+    geom.angles_dict.update(prim_angles)
 
     # coordinates of the injection port [m]
     xport_in = 1.3268  # 1.5 - 0.1541
@@ -61,15 +62,15 @@ def define_geometry(config, analyzer=1):
     dist_r0 = 0.2
 
     # coordinates of the center of the ALPHA2 plates
-    geom.add_coords('A2', 'port_in', dist_A2, geom.angles['A2'])
+    geom.add_coords('A2', 'port_in', dist_A2, geom.angles_dict['A2'])
     # coordinates of the center of the BETA2 plates
-    geom.add_coords('B2', 'A2', dist_B2, geom.angles['B2'])
+    geom.add_coords('B2', 'A2', dist_B2, geom.angles_dict['B2'])
     # coordinates of the center of the BETA2 plates
-    geom.add_coords('B1', 'B2', dist_B1, geom.angles['B1'])
+    geom.add_coords('B1', 'B2', dist_B1, geom.angles_dict['B1'])
     # coordinates of the center of the BETA2 plates
-    geom.add_coords('A1', 'B1', dist_A1, geom.angles['A1'])
+    geom.add_coords('A1', 'B1', dist_A1, geom.angles_dict['A1'])
     # coordinates of the initial point of the trajectory [m]
-    geom.add_coords('r0', 'A1', dist_r0, geom.angles['r0'])
+    geom.add_coords('r0', 'A1', dist_r0, geom.angles_dict['r0'])
 
     # AIM position (BEFORE the Secondary beamline) [m]
     # coordinates of the output port
@@ -89,7 +90,7 @@ def define_geometry(config, analyzer=1):
                   'A4': np.array([0.11, 3.95, 26.16]),
                   'B4': np.array([0.11, 3.95, 26.16]),
                   'an': np.array([0.11, 3.95, 26.16])}
-    geom.angles.update(sec_angles)
+    geom.angles_dict.update(sec_angles)
 
     # distance from r_aim to the Alpha3 center
     dist_A3 = 0.9343  # 0.4  # 0.3  # 1/2 of plates length
@@ -103,9 +104,9 @@ def define_geometry(config, analyzer=1):
     dist_s = 0.398
 
     # coordinates of the center of the new aim point
-    geom.add_coords('aim', 'port_out', dist_A3-0.1, geom.angles['A3'])
+    geom.add_coords('aim', 'port_out', dist_A3-0.1, geom.angles_dict['A3'])
     # coordinates of the center of the ALPHA3 plates
-    geom.add_coords('A3', 'port_out', dist_A3, geom.angles['A3'])
+    geom.add_coords('A3', 'port_out', dist_A3, geom.angles_dict['A3'])
 
     geom.r_dict['B3'] = np.array([3.113, -0.418, -0.23])
     geom.r_dict['B4'] = np.array([3.772, -0.4645, -0.313])
@@ -114,20 +115,20 @@ def define_geometry(config, analyzer=1):
     geom.r_dict['an'] = geom.r_dict['slit']
 
     # # coordinates of the center of the BETA3 plates
-    # geom.add_coords('B3', 'A3', dist_B3, geom.angles['B3'])
+    # geom.add_coords('B3', 'A3', dist_B3, geom.angles_dict['B3'])
     # # coordinates of the center of the BETA4 plates
-    # geom.add_coords('B4', 'B3', dist_B4, geom.angles['B4'])
+    # geom.add_coords('B4', 'B3', dist_B4, geom.angles_dict['B4'])
     # # coordinates of the center of the ALPHA4 plates
-    # geom.add_coords('A4', 'B4', dist_A4, geom.angles['A4'])
+    # geom.add_coords('A4', 'B4', dist_A4, geom.angles_dict['A4'])
     # # Coordinates of the CENTRAL slit
-    # geom.add_coords('slit', 'A4', dist_s, geom.angles['an'])
+    # geom.add_coords('slit', 'A4', dist_s, geom.angles_dict['an'])
     # # Coordinates of the ANALYZER
-    # geom.add_coords('an', 'A4', dist_s, geom.angles['an'])
+    # geom.add_coords('an', 'A4', dist_s, geom.angles_dict['an'])
 
     # print info
     print('\nDefining geometry for Analyzer #{}'.format(analyzer))
-    print('\nPrimary beamline angles: ', geom.angles['r0'])
-    print('Secondary beamline angles: ', geom.angles['A3'])
+    print('\nPrimary beamline angles: ', geom.angles_dict['r0'])
+    print('Secondary beamline angles: ', geom.angles_dict['A3'])
     print('r0 = ', np.round(geom.r_dict['r0'], 3))
     print('r_aim = ', np.round(geom.r_dict['aim'], 3))
     print('r_slit = ', np.round(geom.r_dict['slit'], 3))

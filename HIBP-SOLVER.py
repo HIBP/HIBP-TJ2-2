@@ -28,12 +28,12 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # beam energy
-Emin, Emax, dEbeam = 148., 150., 2.
+Emin, Emax, dEbeam = 148., 148., 2.
 
 # set flags
 optimizeB2 = False
 optimizeA3B3 = False
-pass2AN = False
+pass2AN = True
 save_radref = False
 
 # A1 and B1 plates voltages
@@ -41,7 +41,7 @@ UA1, UB1 = 0.1, 0.75  # [kV]
 
 # UA2 voltages
 UA2min, UA2max, dUA2 = -9., 5., 2.
-NA2_points = 40
+NA2_points = 6
 
 # B2 plates voltage
 UB2, dUB2 = 2.0, 35.0  # [kV], [kV/m]
@@ -77,41 +77,25 @@ if 'B' not in locals():
 E = {}
 # load E for primary beamline
 try:
-    E_prim, edges_prim = hb.read_E('prim', geomTJ2)
-    geomTJ2.plates_edges.update(edges_prim)
+    hb.read_plates('prim', geomTJ2, E)
     print('\n Primary Beamline loaded')
 except FileNotFoundError:
     print('\n Primary Beamline NOT FOUND')
-    E_prim = {}
 
 # load E for secondary beamline
 try:
-    E_sec, edges_sec = hb.read_E('sec', geomTJ2)
-    geomTJ2.plates_edges.update(edges_sec)
+    E_sec = hb.read_plates('sec', geomTJ2, E)
     print('\n Secondary Beamline loaded')
 except FileNotFoundError:
     print('\n Secondary Beamline NOT FOUND')
-    E_sec = {}
-
-E.update(E_prim)
-E.update(E_sec)
 
 # %% Analyzer parameters
-if geomTJ2.an_params.shape[0] > 0:
+if 'an' in geomTJ2.plates_dict.keys():
     # Analyzer G
-    G = geomTJ2.an_params[3]
-
-    n_slits, slit_dist, slit_w = geomTJ2.an_params[:3]
-
-    # add slits to Geometry
-    geomTJ2.add_slits(n_slits=n_slits, slit_dist=slit_dist, slit_w=slit_w,
-                      slit_l=0.1)
-
-    # define detector
-    geomTJ2.add_detector(n_det=n_slits, det_dist=slit_dist,
-                         det_w=slit_dist, det_l=0.1)
-    print('\nAnalyzer with {} slits added to Geometry'.format(n_slits))
-    print('G = {}\n'.format(G))
+    G = geomTJ2.plates_dict['an'].G
+    # add detector coords to dictionary
+    edges = geomTJ2.plates_dict['an'].det_edges
+    geomTJ2.r_dict['det'] = edges[edges.shape[0]//2][0]
 else:
     G = 1.
     print('\nNO Analyzer')
@@ -153,7 +137,7 @@ for Ebeam in Ebeam_range:
 
     # shot = '49873'
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
-    print('INPUT FILE: ', input_fname)
+    print('\n>>INPUT FILE: ', input_fname)
     if input_fname != '':
         exp_voltages = np.loadtxt(input_fname)
         indexes = np.linspace(1, exp_voltages.shape[0]-1, NA2_points, dtype=int)
@@ -194,9 +178,8 @@ for Ebeam in Ebeam_range:
                   'A3': UA3, 'B3': UB3, 'A4': UA4, 'B4': UB4,
                   'an': Ebeam/(2*G)}
         # create new trajectory object
-        tr = hb.Traj(q, m_ion, Ebeam, r0,
-                     geomTJ2.angles['r0'][0], geomTJ2.angles['r0'][1],
-                     U_dict, dt)
+        tr = hb.Traj(q, m_ion, Ebeam, r0, geomTJ2.angles_dict['r0'][0],
+                     geomTJ2.angles_dict['r0'][1], U_dict, dt)
         # optimize B2 voltage
         tr = hb.optimize_B2(tr, geomTJ2, UB2, dUB2, E, B, dt, stop_plane_n,
                             target, optimizeB2, eps_xy=eps_xy, eps_z=eps_z)
@@ -234,12 +217,13 @@ hbplot.plot_grid(traj_list_passed, geomTJ2, config, onlyE=True,
 #                 plot_analyzer=False, plot_traj=True, plot_all=False)
 
 hbplot.plot_scan(traj_list_passed, geomTJ2, Ebeam, config,
-                 full_primary=False, plot_analyzer=False,
+                 full_primary=False, plot_analyzer=True,
                  plot_det_line=True, subplots_vertical=True, scale=5)
 # hbplot.plot_sec_angles(traj_list_passed, config, Ebeam='all')
 
 # %% Optimize Secondary Beamline
 t1 = time.time()
+# define list of trajectories that hit slit
 traj_list_a3b3 = []
 if optimizeA3B3:
     print('\n Secondary beamline optimization')
@@ -248,6 +232,7 @@ if optimizeA3B3:
                                          E, B, dt, target='slit',
                                          UA3_max=40., UB3_max=40.,
                                          eps_xy=1e-3, eps_z=1e-3)
+        # check geometry intersection and voltage failure
         if not (True in tr.IntersectGeometrySec.values()) and not vltg_fail:
             traj_list_a3b3.append(tr)
             print('\n Trajectory saved')
@@ -263,7 +248,7 @@ else:
         print('\nEb = {}, UA2 = {:.2f}'.format(tr.Ebeam, tr.U['A2']))
         RV0 = np.array([tr.RV_sec[0]])
         tr.pass_sec(RV0, geomTJ2.r_dict['slit'], E, B, geomTJ2,
-                    stop_plane_n=geomTJ2.det_plane_n,
+                    stop_plane_n=geomTJ2.plates_dict['an'].det_plane_n,
                     tmax=9e-5, eps_xy=eps_xy, eps_z=eps_z)
         traj_list_a3b3.append(tr)
     t2 = time.time()
@@ -272,12 +257,14 @@ else:
 # %% Pass to ANALYZER
 if pass2AN:
     print('\n Passing to ANALYZER {}'.format(analyzer))
+    # define list of trajectories that hit detector
     traj_list_an = []
     for tr in copy.deepcopy(traj_list_a3b3):
         print('\nEb = {}, UA2 = {:.2f}'.format(tr.Ebeam, tr.U['A2']))
         RV0 = np.array([tr.RV_sec[0]])
+        # pass secondary trajectory to detector
         tr.pass_sec(RV0, geomTJ2.r_dict['det'], E, B, geomTJ2,
-                    stop_plane_n=geomTJ2.det_plane_n,
+                    stop_plane_n=geomTJ2.plates_dict['an'].det_plane_n,
                     tmax=9e-5, eps_xy=eps_xy, eps_z=eps_z)
         traj_list_an.append(tr)
 
@@ -288,11 +275,11 @@ if pass2AN:
 # hbplot.plot_traj(traj_list_a3b3, geomTJ2, 132., 0.0, config,
 #                   full_primary=False, plot_analyzer=True,
 #                   subplots_vertical=True, scale=3.5)
-hbplot.plot_scan(traj_list_a3b3, geomTJ2, 132., config,
+hbplot.plot_scan(traj_list_a3b3, geomTJ2, Ebeam, config,
                  full_primary=False, plot_analyzer=True,
                  plot_det_line=True, subplots_vertical=True, scale=4)
 
-hbplot.plot_scan(traj_list_an, geomTJ2, 132., config,
+hbplot.plot_scan(traj_list_an, geomTJ2, Ebeam, config,
                  full_primary=False, plot_analyzer=True,
                  plot_det_line=True, subplots_vertical=True, scale=4)
 

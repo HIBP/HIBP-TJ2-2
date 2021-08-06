@@ -1,11 +1,10 @@
+'''
+Calculate electric potential and electric field between two plates
+'''
 import numpy as np
 import time
 import hibplib as hb
 import hibpplotlib as hbplot
-
-'''
-Calculate electric potential and electric field between two plates
-'''
 
 
 # %%
