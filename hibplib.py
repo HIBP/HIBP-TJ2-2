@@ -118,7 +118,8 @@ class Traj():
 
             tag_column = np.hstack((tag_column, 10))
 
-            if geom.check_chamb_intersect('prim', RV_old[0, 0:3], RV_new[0, 0:3]):
+            if geom.check_chamb_intersect('prim', RV_old[0, 0:3],
+                                          RV_new[0, 0:3]):
                 print('Primary intersected chamber')
                 self.IntersectGeometry['chamb'] = True
                 break
@@ -175,7 +176,8 @@ class Traj():
             # runge-kutta step:
             RV_new = runge_kutt(k, RV_old, dt, E_local, B_local)
 
-            if geom.check_chamb_intersect('sec', RV_old[0, 0:3], RV_new[0, 0:3]):
+            if geom.check_chamb_intersect('sec', RV_old[0, 0:3],
+                                          RV_new[0, 0:3]):
                 # print('Secondary intersected chamber exit')
                 self.IntersectGeometrySec['chamb'] = True
 
@@ -442,13 +444,20 @@ class Analyzer(Plates):
         rotate all the coordinates around the axis with beamline_angles
         '''
         super().rotate(angles, beamline_angles)
-        for attr in [self.slits_edges, self.slit_plane_n, self.slits_spot,
-                     self.det_edges, self.det_plane_n, self.det_spot]:
+        for attr in [self.slits_edges, self.slits_spot,
+                     self.det_edges, self.det_spot]:
             if len(attr.shape) < 2:
                 attr = rotate3(attr, angles, beamline_angles)
             else:
                 for i in range(attr.shape[0]):
                     attr[i, :] = rotate3(attr[i, :], angles, beamline_angles)
+        # recalculate normal to slit plane:
+        self.slit_plane_n = calc_normal(self.slits_edges[0, 0, :],
+                                        self.slits_edges[0, 1, :],
+                                        self.slits_edges[0, 2, :])
+        self.det_plane_n = calc_normal(self.det_edges[0, 0, :],
+                                       self.det_edges[0, 1, :],
+                                       self.det_edges[0, 2, :])
 
     def shift(self, r_new):
         '''
@@ -482,9 +491,11 @@ class Analyzer(Plates):
             for i in slits:
                 c = next(colors)
                 # plot center
-                ax.plot(edges[i, 0, index_X], edges[i, 0, index_Y], '*', color=c)
+                ax.plot(edges[i, 0, index_X], edges[i, 0, index_Y],
+                        '*', color=c)
                 # plot edges
-                ax.fill(edges[i, 1:, index_X], edges[i, 1:, index_Y], fill=False)
+                ax.fill(edges[i, 1:, index_X], edges[i, 1:, index_Y],
+                        fill=False)
             # plot spot
             ax.fill(spot[:, index_X], spot[:, index_Y], fill=False)
             ax.fill(spot[:, index_X], spot[:, index_Y], fill=False)
@@ -493,7 +504,7 @@ class Analyzer(Plates):
 # %%
 def define_slits(r0, slit_angles, n_slits, slit_dist, slit_w, slit_l):
     '''
-    calculate coordinates of slits edges
+    calculate coordinates of slits edges with central slit at r0
     '''
     n_slits = int(n_slits)
     # calculate slits coordinates:
@@ -514,15 +525,23 @@ def define_slits(r0, slit_angles, n_slits, slit_dist, slit_w, slit_l):
             r_slits[i_slit, j, :] += r0
 
     # calculate normal to slit plane:
-    slit_plane_n = np.cross(r_slits[0, 0, :] - r_slits[0, 1, :],
-                            r_slits[0, 0, :] - r_slits[0, 2, :])
-    slit_plane_n = slit_plane_n/np.linalg.norm(slit_plane_n)
+    slit_plane_n = calc_normal(r_slits[0, 0, :], r_slits[0, 1, :],
+                               r_slits[0, 2, :])
 
     # create polygon, which contains all slits (slits spot):
     slits_spot = 1.5*np.vstack([r_slits[0, [1, 4], :] - r0,
                                 r_slits[-1, [3, 2], :] - r0]) + r0
 
     return r_slits, slit_plane_n, slits_spot
+
+
+# %%
+def calc_normal(point1, point2, point3):
+    '''
+    calculate vector normal to a plane defined by 3 points
+    '''
+    plane_n = np.cross(point1 - point2, point1 - point3)
+    return plane_n/np.linalg.norm(plane_n)
 
 
 # %% define class for geometry
@@ -663,7 +682,8 @@ def calc_angles(vector):
     '''
     drad = np.pi/180.  # converts degrees to radians
     x, y, z = vector / np.linalg.norm(vector)
-    alpha = np.arcsin(y)  # rad
+    # alpha = np.arcsin(y)  # rad
+    alpha = np.arccos(x)  # rad
     if abs(y) > 1e-9:
         beta = np.arcsin(-np.tan(alpha) * z / y)  # rad
     elif abs(z) < 1e-9:
@@ -1010,7 +1030,8 @@ def optimize_A4(tr, geom, UA4, dUA4, E, B, dt, eps_alpha=0.1):
         V_last = tr.RV_sec[-1][3:]
         alpha, beta = calc_angles(V_last)
         dalpha = alpha_target - alpha
-        print('\n UA4 OLD = {:.2f} kV, dalpha = {:.4f} deg'.format(UA4, dalpha))
+        print('\n UA4 OLD = {:.2f} kV, dalpha = {:.4f} deg'
+              .format(UA4, dalpha))
         drXY = np.linalg.norm(rs[:2]-tr.RV_sec[-1, :2]) * \
             np.sign(np.cross(tr.RV_sec[-1, :2], rs[:2]))
         dz = rs[2] - tr.RV_sec[-1, 2]
