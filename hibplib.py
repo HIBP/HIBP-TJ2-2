@@ -1595,9 +1595,10 @@ def read_plates(beamline, geom, E, dirname='elecfield'):
     return
 
 
-def read_B(config, dirname='tj2lib', interp=True):
+def read_B(config, dirname='tj2lib', interp=True, coeff=1.0):
     '''
     read Magnetic field values and create Bx, By, Bz, rho interpolants
+    coeff is used for normalization
     '''
     print('\n Reading Magnetic field')
     print('Configuration ', config)
@@ -1643,9 +1644,9 @@ def read_B(config, dirname='tj2lib', interp=True):
     x = np.arange(volume_corner1[0], volume_corner2[0], resolution)
     y = np.arange(volume_corner1[1], volume_corner2[1], resolution)
     z = np.arange(volume_corner1[2], volume_corner2[2], resolution)
-    Bx = B[:, 0].reshape(grid.shape[1:])
-    By = B[:, 1].reshape(grid.shape[1:])
-    Bz = B[:, 2].reshape(grid.shape[1:])
+    Bx = B[:, 0].reshape(grid.shape[1:]) * coeff
+    By = B[:, 1].reshape(grid.shape[1:]) * coeff
+    Bz = B[:, 2].reshape(grid.shape[1:]) * coeff
     rho = rho.reshape(grid.shape[1:])
     if interp:
         # make an interpolation of B

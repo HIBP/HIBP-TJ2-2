@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 TJ2 stellarator, HIBP-II
 
@@ -28,7 +29,7 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # beam energy
-Emin, Emax, dEbeam = 148., 148., 2.
+Emin, Emax, dEbeam = 172., 176., 4.
 
 # set flags
 optimizeB2 = False
@@ -41,7 +42,7 @@ UA1, UB1 = 0.1, 0.75  # [kV]
 
 # UA2 voltages
 UA2min, UA2max, dUA2 = -9., 5., 2.
-NA2_points = 6
+NA2_points = 40
 
 # B2 plates voltage
 UB2, dUB2 = 2.0, 35.0  # [kV], [kV/m]
@@ -51,7 +52,8 @@ UB3, dUB3 = 0.0, -25.0  # [kV], [kV/m]
 
 # A3 voltages
 UA3, dUA3 = 0.0, -25.0  # [kV], [kV/m]
-if analyzer == 2: dUA3 = -dUA3
+if analyzer == 2:
+    dUA3 = -dUA3
 
 # A4 voltages
 UA4, dUA4 = 0.0, 2.0  # [kV], [kV/m]
@@ -72,7 +74,8 @@ stop_plane_n = hb.calc_vector(1.0, alpha_aim, beta_aim,
 # %% Load Magnetic Field
 if 'B' not in locals():
     dirname = 'tj2lib'
-    B, rho_interp = hb.read_B(config, dirname=dirname, interp=True)
+    B, rho_interp = hb.read_B(config, dirname=dirname, interp=True,
+                              coeff=0.96/1.0496)
 
 # %% Load Electric Field
 E = {}
@@ -108,13 +111,14 @@ traj_list_B2 = []
 Ebeam_range = np.arange(Emin, Emax + dEbeam, dEbeam)  # [keV]
 
 for Ebeam in Ebeam_range:
+
     t1 = time.time()
     # set up scanning voltage
-    ## apr2019
-    if Ebeam < 105:
-        shot = '48425'
-    else:
-        shot = '48435'
+    # apr2019
+    # if Ebeam < 105:
+    #     shot = '48425'
+    # else:
+    #     shot = '48435'
 
     ## 18dec2019
     # if Ebeam < 93.:
@@ -125,16 +129,16 @@ for Ebeam in Ebeam_range:
     #     shot = '49878'
 
     ## mar2020
-    # if Ebeam == 92:
-    #     shot = '50561'
-    # elif Ebeam == 96 or Ebeam == 100:
-    #     shot = '50559'
-    # elif Ebeam == 120:
-    #     shot = '50553'
-    # elif Ebeam == 168 or Ebeam == 172:
-    #     shot = '50504'
-    # else:
-    #     shot = '50497'
+    if Ebeam == 92:
+        shot = '50561'
+    elif Ebeam == 96 or Ebeam == 100:
+        shot = '50559'
+    elif Ebeam == 120:
+        shot = '50553'
+    elif Ebeam == 168 or Ebeam == 172:
+        shot = '50504'
+    else:
+        shot = '50497'
 
     # shot = '49873'
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
@@ -208,7 +212,7 @@ for Ebeam in Ebeam_range:
 traj_list_passed = copy.deepcopy(traj_list_B2)
 
 # %% Save traj list
-# hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
+hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
 
 # %% Additional plots
 hbplot.plot_grid(traj_list_passed, geomTJ2, config, onlyE=True,

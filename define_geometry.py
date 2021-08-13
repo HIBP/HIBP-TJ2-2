@@ -32,7 +32,7 @@ def define_geometry(config, analyzer=1):
 
     # PRIMARY beamline geometry
     # alpha and beta angles of the PRIMARY beamline [deg]
-    dalpha = 1.0
+    dalpha = 0.0  # 0.5
     dbeta = 0.0
     alpha_prim = 73.303 + dalpha  # 73.381
     beta_prim = -11.721 + dbeta  # -11.856
@@ -157,7 +157,7 @@ def define_geometry(config, analyzer=1):
     for key in geom.r_dict.keys():
         # shift along X, Y or Z axis
         geom.r_dict[key][0] += 0.0  # 0.0025
-        geom.r_dict[key][1] += 0.05  # 0.0
+        geom.r_dict[key][1] += 0.0  # 0.05
         geom.r_dict[key][2] += 0.0
 
     return geom
