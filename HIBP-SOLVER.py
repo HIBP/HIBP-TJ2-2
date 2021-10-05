@@ -29,7 +29,7 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # beam energy
-Emin, Emax, dEbeam = 172., 176., 4.
+Emin, Emax, dEbeam = 148., 150., 2.
 
 # set flags
 optimizeB2 = False
@@ -42,7 +42,7 @@ UA1, UB1 = 0.1, 0.75  # [kV]
 
 # UA2 voltages
 UA2min, UA2max, dUA2 = -9., 5., 2.
-NA2_points = 40
+NA2_points = 35
 
 # B2 plates voltage
 UB2, dUB2 = 2.0, 35.0  # [kV], [kV/m]
@@ -115,10 +115,10 @@ for Ebeam in Ebeam_range:
     t1 = time.time()
     # set up scanning voltage
     # apr2019
-    # if Ebeam < 105:
-    #     shot = '48425'
-    # else:
-    #     shot = '48435'
+    if Ebeam < 105:
+        shot = '48425'
+    else:
+        shot = '48435'
 
     ## 18dec2019
     # if Ebeam < 93.:
@@ -129,16 +129,16 @@ for Ebeam in Ebeam_range:
     #     shot = '49878'
 
     ## mar2020
-    if Ebeam == 92:
-        shot = '50561'
-    elif Ebeam == 96 or Ebeam == 100:
-        shot = '50559'
-    elif Ebeam == 120:
-        shot = '50553'
-    elif Ebeam == 168 or Ebeam == 172:
-        shot = '50504'
-    else:
-        shot = '50497'
+    # if Ebeam == 92:
+    #     shot = '50561'
+    # elif Ebeam == 96 or Ebeam == 100:
+    #     shot = '50559'
+    # elif Ebeam == 120:
+    #     shot = '50553'
+    # elif Ebeam == 168 or Ebeam == 172:
+    #     shot = '50504'
+    # else:
+    #     shot = '50497'
 
     # shot = '49873'
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'

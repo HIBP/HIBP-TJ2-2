@@ -109,7 +109,7 @@ def plot_2d(B, points, plane='xy', cutoff=2, n_contours=50):
 
 # %% stream plot of magnetic field
 def plot_B_stream(B, volume_corner1, volume_corner2, resolution,
-                  grid, color='r', dens=1.0, plot_sep=True):
+                  grid_shape, color='r', dens=1.0, plot_sep=True):
     '''
     stream plot of magnetic field
     '''
@@ -124,9 +124,9 @@ def plot_B_stream(B, volume_corner1, volume_corner2, resolution,
     y = np.arange(volume_corner1[1], volume_corner2[1], resolution)
     z = np.arange(volume_corner1[2], volume_corner2[2], resolution)
 
-    Bx = B[:, 0].reshape(grid.shape[1:])
-    By = B[:, 1].reshape(grid.shape[1:])
-    Bz = B[:, 2].reshape(grid.shape[1:])
+    Bx = B[:, 0].reshape(grid_shape)
+    By = B[:, 1].reshape(grid_shape)
+    Bz = B[:, 2].reshape(grid_shape)
 
     # choose z position
     z_cut = np.where(abs(z) < 0.001)[0][0]  # Bx.shape[2]//2

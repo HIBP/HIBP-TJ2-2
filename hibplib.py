@@ -417,7 +417,7 @@ class Analyzer(Plates):
         # set detector angles
         det_angles = np.array([180. - self.theta, 0, 0])
         r_det, det_plane_n, det_spot = \
-            define_slits(np.array([np.sqrt(self.XD**2 + (self.YD1 - self.YD2)**2), 0, 0]),
+            define_slits(np.array([self.XD, self.YD1 - self.YD2, 0]),
                          det_angles, n_det, self.slit_dist, self.slit_dist,
                          slit_l)
         # save detector edges
@@ -1629,25 +1629,22 @@ def read_B(config, dirname='tj2lib', interp=True, coeff=1.0):
         volume_corner2 = [float(i) for i in f.readline().split()[0:3]]
         resolution = float(f.readline().split()[0])
 
-    # create grid of points
-    grid = np.mgrid[volume_corner1[0]:volume_corner2[0]:resolution,
-                    volume_corner1[1]:volume_corner2[1]:resolution,
-                    volume_corner1[2]:volume_corner2[2]:resolution]
+    x = np.arange(volume_corner1[0], volume_corner2[0], resolution)
+    y = np.arange(volume_corner1[1], volume_corner2[1], resolution)
+    z = np.arange(volume_corner1[2], volume_corner2[2], resolution)
+    grid_shape = (x.size, y.size, z.size)
 
     B = B_read[:, 3:6]
     rho = B_read[:, 6]
 
     # plot B stream
-    hbplot.plot_B_stream(B, volume_corner1, volume_corner2, resolution, grid,
-                         plot_sep=True)
+    hbplot.plot_B_stream(B, volume_corner1, volume_corner2, resolution,
+                         grid_shape, plot_sep=True)
 
-    x = np.arange(volume_corner1[0], volume_corner2[0], resolution)
-    y = np.arange(volume_corner1[1], volume_corner2[1], resolution)
-    z = np.arange(volume_corner1[2], volume_corner2[2], resolution)
-    Bx = B[:, 0].reshape(grid.shape[1:]) * coeff
-    By = B[:, 1].reshape(grid.shape[1:]) * coeff
-    Bz = B[:, 2].reshape(grid.shape[1:]) * coeff
-    rho = rho.reshape(grid.shape[1:])
+    Bx = B[:, 0].reshape(grid_shape) * coeff
+    By = B[:, 1].reshape(grid_shape) * coeff
+    Bz = B[:, 2].reshape(grid_shape) * coeff
+    rho = rho.reshape(grid_shape)
     if interp:
         # make an interpolation of B
         Bx_interp = RegularGridInterpolator((x, y, z), Bx)
@@ -1694,8 +1691,7 @@ def save_traj_list(traj_list, config, r_aim, dirname='output'):
     fname = dirname + '/' + 'E{}-{}'.format(int(min(Ebeam_list)),
                                             int(max(Ebeam_list))) + \
         '_UA2{}-{}'.format(int(min(UA2_list)), int(max(UA2_list))) + \
-        '_alpha{}_beta{}'.format(int(round(traj.alpha)),
-                                 int(round(traj.beta))) +\
+        '_alpha{:.1f}_beta{:.1f}'.format(traj.alpha, traj.beta) +\
         '_x{}y{}z{}.pkl'.format(int(r_aim[0]*100), int(r_aim[1]*100),
                                 int(r_aim[2]*100))
 
@@ -1754,7 +1750,7 @@ def save_radref(traj_list, Ebeam, rho_interp, dirname='radref/',
             radref = np.vstack([radref, radref_temp])
     # set rho<0 at HFS
     distances = radref[:-1, 2] - radref[1:, 2]
-    mask = np.argwhere(distances < 0)
+    mask = np.argwhere(distances < -1e-3)
     if mask.shape[0] == 0:
         index = distances.shape[0]
     else:

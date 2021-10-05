@@ -26,13 +26,13 @@ def define_geometry(config, analyzer=1):
     geom = hb.Geometry()
 
     # plasma parameters
-    geom.R = 1.5  # tokamak major radius [m]
+    geom.R = 1.5  # major radius of the torus [m]
     geom.r_plasma = 0.4  # plasma minor radius [m]
     geom.elon = 1.  # plasma elongation
 
     # PRIMARY beamline geometry
     # alpha and beta angles of the PRIMARY beamline [deg]
-    dalpha = 0.0  # 0.5
+    dalpha = 0.0  # -0.5  # 0.0 0.5
     dbeta = 0.0
     alpha_prim = 73.303 + dalpha  # 73.381
     beta_prim = -11.721 + dbeta  # -11.856

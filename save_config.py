@@ -1,5 +1,5 @@
 '''
-import contours for magnetic configuration and save them to rile
+import contours for magnetic configuration and save them to file
 '''
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ cs = ax.contour(R, Z, data[:, 5].reshape(R.shape).T,
                 levels=np.linspace(0.05, 0.99, 15))
 ax.axis('equal')
 
-# get contours coordinates and contour levels
+# %%get contours coordinates and contour levels
 conts = cs.allsegs
 levels = cs.levels
 # save to file
