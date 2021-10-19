@@ -7,12 +7,18 @@ import matplotlib.patches as patches
 from matplotlib.patches import Rectangle
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import visvis as vv
 import hibplib as hb
 import pylab
 import os
 from scipy.stats import gaussian_kde
 from itertools import cycle
+
+try:
+    import visvis as vv
+except ModuleNotFoundError:
+    print('module visvis NOT FOUND')
+    pass
+
 try:
     import alphashape
 except ModuleNotFoundError:
@@ -810,7 +816,7 @@ def plot_grid_a3b3(traj_list, geom, config,
 
 
 # %%
-def plot_traj_toslits(tr, geom, config, plot_fan=True):
+def plot_traj_toslits(tr, geom, config, slits=[2], plot_fan=True):
     '''
     plot fan of trajectories which go to slits
     '''
@@ -828,7 +834,7 @@ def plot_traj_toslits(tr, geom, config, plot_fan=True):
     geom.plot(ax2, axes='XZ', plot_aim=False, plot_analyzer=True)
     geom.plot(ax3, axes='ZY', plot_aim=False, plot_analyzer=True)
 
-    n_slits = geom.slits_edges.shape[0]
+    n_slits = geom.plates_dict['an'].slits_edges.shape[0]
     # set color cycler
     prop_cycle = plt.rcParams['axes.prop_cycle']
     colors = prop_cycle.by_key()['color']
@@ -848,7 +854,7 @@ def plot_traj_toslits(tr, geom, config, plot_fan=True):
             ax3.plot(fan_tr[:, 2], fan_tr[:, 1], color='tab:gray')
 
     # plot secondaries
-    for i_slit in range(n_slits):
+    for i_slit in slits:
         c = next(colors)
         for fan_tr in tr.RV_sec_toslits[i_slit]:
             ax1.plot(fan_tr[:, 0], fan_tr[:, 1], color=c)
@@ -856,7 +862,7 @@ def plot_traj_toslits(tr, geom, config, plot_fan=True):
             ax3.plot(fan_tr[:, 2], fan_tr[:, 1], color=c)
 
     # plot zones
-    for i_slit in range(n_slits):
+    for i_slit in slits:
         c = next(colors)
         for fan_tr in tr.RV_sec_toslits[i_slit]:
             ax1.plot(fan_tr[0, 0], fan_tr[0, 1], 'o', color=c,
@@ -1076,3 +1082,37 @@ def plot_sec_angles(traj_list, config, Ebeam='all'):
     ax2.legend()
     ax1.axis('tight')
     ax2.axis('tight')
+
+
+# %%
+def plot_lam(traj_list, config, rho_interp, Ebeam='all', slits=range(5)):
+    '''
+    plot SV size along trajectory (lambda) vs UA2 and vs rho
+    '''
+    # plotting params
+    fig1, ax1 = plt.subplots()
+    fig1, ax2 = plt.subplots()
+    set_axes_param(ax1, 'UA2 (kV)', r'$\lambda$ (mm)')
+    set_axes_param(ax2, r'$\rho', r'$\lambda$ (mm)')
+
+    if Ebeam == 'all':
+        equal_E_list = np.array([tr.Ebeam for tr in traj_list])
+        equal_E_list = np.unique(equal_E_list)
+    else:
+        equal_E_list = np.array([float(Ebeam)])
+
+    for Eb in equal_E_list:
+        for i_slit in slits:
+            UA2_list = []
+            rho_list = []
+            lam_list = []
+            for tr in traj_list:
+                if tr.Ebeam == Eb and tr.ion_zones[i_slit].shape[0] > 0:
+                    UA2_list.append(tr.U['A2'])
+                    rho_list.append(rho_interp(tr.RV_sec[0, :3])[0])
+                    lam_list.append(np.linalg.norm(tr.ion_zones[i_slit][0]
+                                                   - tr.ion_zones[i_slit][-1])*1000)
+            ax1.plot(UA2_list, lam_list, '-o', label='slit ' + str(i_slit+1))
+            ax2.plot(rho_list, lam_list, '-o', label='slit ' + str(i_slit+1))
+    ax1.legend()
+    ax2.legend()

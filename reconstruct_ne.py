@@ -1,29 +1,21 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 Reconstruct ne profile from Itot HIBP-II (TJ-II)
-"""
+'''
 import numpy as np
 import math
 import matplotlib.pyplot as plt
 from scipy import integrate, signal, optimize, interpolate
 from import_TS_profile import TeFit, NeShapeFunc, NeFit, ImportTS
 import time
+import hibplib as hb
+import hibpplotlib as hbplot
+
 
 # %%
-# def ne_rec(rho, p1, p2, p3):
-#     '''reconstructed ne
-#     '''
-#     return p1*(np.exp(-p2*(1 - (rho**2)) - p3*(1 - rho**4)) - 1)
-#     return p1*(1-rho**2)*(np.exp(-p2*rho**2 -p3*rho**4 -p4*rho**6))
-#         m = coeffs.shape[0]
-#         n0 = 1 - rho**2 # base polynom
-#         n = [coeffs[i]*(rho**(2*i)) for i in np.arange(0,m-1)]
-#         n = n0*np.array(n)
-#         return coeffs[m-1]*1e19*np.sum(n)
-
-
-def ne_rec(rho, p1, p2, p3):
-    '''ne fit using chord-averaged value
+def ne_rec(rho, neAvg, p1, p2, p3):
+    '''
+    ne fit using chord-averaged value neAvg
     '''
     coeffs = [p1, p2, p3]
     r = np.arange(-1, 1.01, 0.01)
@@ -31,119 +23,99 @@ def ne_rec(rho, p1, p2, p3):
     return k*NeShapeFunc(rho, *coeffs)
 
 
-# %%
-def integrate_traj(tr, lam, ne, coeffs, Te, sigmaEff12, sigmaEff13,
-                   sigmaEff23):
+def integrate_traj(tr, get_rho, ne, coeffs, Te,
+                   sigmaEff12, sigmaEff13, sigmaEff23):
     '''
-    lam, ne, Te - interpolants over rho [-1:1]
+    ne0, Te0 - central values
     sigmaV - interpolant over Te
-    rho = tr.rho_ion
-    returns ne(rho)*(sigma_V(rho)/v0)*tr.lam*exp(-integral_prim-integral_sec)
+    returns ne(rho)*(sigma_V(rho)/v0)*lam*exp(-integral_prim-integral_sec)
     '''
-    # integrals over 1 and 2 trajectory
-    I1 = 0
-    I2 = 0
-    L1 = 0
-    L2 = 0
+    # initial particle velocity [m/s]
+    v0 = math.sqrt(2*tr.Ebeam*1.6e-16 / tr.m)
+
+    # first of all add the first point of secondary traj to the primary traj
+    # find the distances
+    distances = np.array([np.linalg.norm(tr.RV_prim[i, :3] - tr.RV_sec[0, :3])
+                         for i in range(tr.RV_prim.shape[0])])
+    sorted_indices = np.argsort(distances)
+    # find position where to insert the new point
+    index_to_insert = max(sorted_indices[0:2])
+    tr.RV_prim = np.insert(tr.RV_prim, index_to_insert,
+                           tr.RV_sec[0, :], axis=0)
+
+    # integrals over primary and secondary trajectory
+    I1, I2, L1, L2 = 0., 0., 0., 0.
     # integration loop
-    for j in range(1, tr[0].x.shape[0]):
-        if np.isnan(tr[0].x[j]):
-            break
-        elif (abs(tr[0].rho[j]) <= 1.0) & (abs(tr[0].rho[j-1]) <= 1.0):
-            x1 = tr[0].x[j-1]
-            x2 = tr[0].x[j]
-            y1 = tr[0].y[j-1]
-            y2 = tr[0].y[j]
-            z1 = tr[0].z[j]
-            z2 = tr[0].z[j-1]
+    # integrating primary trajectory
+    for i in range(1, index_to_insert+1):
+        x1, y1, z1 = tr.RV_prim[i-1, 0], tr.RV_prim[i-1, 1], tr.RV_prim[i-1, 2]
+        x2, y2, z2 = tr.RV_prim[i, 0], tr.RV_prim[i, 1], tr.RV_prim[i, 2]
 
-            dl = math.sqrt((x2-x1)**2+(y2-y1)**2+(z2-z1)**2)
+        rho1 = get_rho([x1, y1, z1])[0]
+        rho2 = get_rho([x2, y2, z2])[0]
 
-            r_loc = 0.5*(tr[0].rho[j] + tr[0].rho[j-1])
+        if (rho1 <= 1) & (rho2 <= 1):
+            dl = np.linalg.norm([x2-x1, y2-y1, z2-z1])
+            r_loc = (rho1 + rho2) / 2
             ne_loc = 1e19 * ne(r_loc, *coeffs)
-            # print('j={}'.format(j))
-            # print('r[j-1]={:.3f}, r[j]={:.3f}'.format(tr[0].rho[j-1],
-            #                                           tr[0].rho[j]))
-            # print('r_loc={:.3f}'.format(r_loc))
             Te_loc = Te(r_loc)
+            I1 += dl * (sigmaEff12(Te_loc) + sigmaEff13(Te_loc)) * ne_loc / v0
+            L1 += dl
 
-            if (tr[0].tag[j] == 1):  # |(tr[0].tag[j] == 0):
-                sigmaEff_loc = sigmaEff12(Te_loc) + sigmaEff13(Te_loc)
-                I1 += dl*sigmaEff_loc*ne_loc
-                L1 += dl
-            elif tr[0].tag[j] == 2:
-                sigmaEff_loc = sigmaEff23(Te_loc)
-                I2 += dl*sigmaEff_loc*ne_loc
-                L2 += dl
-        else:
-            pass
+    # integrating secondary trajectory
+    for i in range(1, tr.RV_sec.shape[0]):
+        x1, y1, z1 = tr.RV_sec[i-1, 0], tr.RV_sec[i-1, 1], tr.RV_sec[i-1, 2]
+        x2, y2, z2 = tr.RV_sec[i, 0], tr.RV_sec[i, 1], tr.RV_sec[i, 2]
 
-    r_loc = tr[0].rho_ion
-    if abs(r_loc) < 0.99:
+        rho1 = get_rho([x1, y1, z1])[0]
+        rho2 = get_rho([x2, y2, z2])[0]
+
+        if (rho1 <= 1) & (rho2 <= 1):
+            dl = np.linalg.norm([x2-x1, y2-y1, z2-z1])
+            r_loc = (rho1 + rho2) / 2
+            ne_loc = 1e19 * ne(r_loc, *coeffs)
+            Te_loc = Te(r_loc)
+            I2 += dl * sigmaEff23(Te_loc) * ne_loc / v0
+            L2 += dl
+
+    r_loc = get_rho([tr.RV_sec[0, 0], tr.RV_sec[0, 1], tr.RV_sec[0, 2]])[0]
+    if r_loc <= 0.99:
         Te_loc = Te(r_loc)
         ne_loc = 1e19 * ne(r_loc, *coeffs)
-        sigmaEff_loc = sigmaEff12(Te_loc)
+        sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc)) / v0
     else:
-        Te_loc = 0.
-        ne_loc = 0.
-        sigmaEff_loc = 0.
+        # simple assumption for SOL
+        Te_loc = 0.1  # 0.
+        ne_loc = 1e19 * 1e-2  # 0.
+        sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc)) / v0  # 0.
 
     # calculate total value with integrals
-    I = ne_loc*sigmaEff_loc*lam(r_loc)*math.exp(-I1-I2)
-    # I = ne_loc*sigmaEff_loc*0.0005*math.exp(-I1-I2/3)
-    # print('\n ne={:.2}, rho_ion={:.2}, Te={:.2}, '.
-    #       format(ne_loc*1e-19, r_loc, float(Te_loc)) +
-    #       'sigmaEff={:.3}, I1={:.3}, I2={:.3}'.
-    #       format(float(sigmaEff_loc), float(I1), float(I2)))
-    return np.array([tr[0].No, tr[0].Ua2, r_loc, I, ne_loc, Te_loc, lam(r_loc),
+    # SV size, ion zones should be calculated!
+    lam = np.linalg.norm(tr.ion_zones[2][0] - tr.ion_zones[2][-1])  # [m]
+    Itot = 2 * ne_loc * sigmaEff_loc * lam * math.exp(-I1-I2)  # relative to I0
+
+    return np.array([tr.Ebeam, tr.U['A2'], r_loc, Itot, ne_loc, Te_loc, lam,
                      sigmaEff_loc, I1, I2, L1, L2])
 
 
 # %%
-def Ibeam(coeffs, Iinj, tr, lam, ne, Te, sigmaEff12, sigmaEff13, sigmaEff23):
+def Ibeam(coeffs, Iinj, traj_list, lam, ne, Te,
+          sigmaEff12, sigmaEff13, sigmaEff23):
     ''' function calculates beam on the detector
     assuming ne distribution with coeffs
     '''
-    # choose which numbers from 'tr' to use
-    N = np.unique(tr.No)
-    N_start = int(np.min(N))  # small
-    N_stop = int(np.max(N))  # big
-
-    Ntr = np.arange(N_start, N_stop+1, 1)
-
     # array to contain:
-    # [0]No, [1]Ua2, [2]r_loc, [3]I, [4]ne, [5]Te, [6]lam, [7]sigmaEff,
+    # [0]Ebeam, [1]Ua2, [2]r_loc, [3]I, [4]ne, [5]Te, [6]lam, [7]sigmaEff,
     # [8]I1, [9]I2, [10]L1, [11]L2
-    Ibeam = np.zeros([N.shape[0], 12])
+    Ntraj = len(traj_list)
+    Ibeam = np.zeros([Ntraj, 12])
 
-    # choose number of filaments
-    fil_start = 3
-    fil_stop = 3
-
-    # choosing slit 3
-    i_slit = 3
     # loop for trajectories
-    for i_No in Ntr:
-        # zeros array for No, Ua2, r_loc, I, ne, Te, lam, sigmaEff,
-        # I1, I2, L1, L2
-        I_calc = np.zeros([1, 12])
-        n_fils = 0
-        # filament loop
-        for i_fil in np.arange(fil_start, fil_stop+1, 1):
-            # print('i_fil=', i_fil)
-            # get trajectories
-            mask = (tr.slit == i_slit) & (tr.fil == i_fil) & (tr.No == i_No)
-            tr1 = tr[mask]
-            if tr1.shape[0] > 0:
-                # print('\n *********Ntr={}'.format(i_No))
-                n_fils += 1
-                I_calc += integrate_traj(tr1, lam, ne, coeffs, Te,
-                                         sigmaEff12, sigmaEff13, sigmaEff23)
-
-        if n_fils > 0:
-            # print('nfils={}'.format(nfils))
-            I_calc[0, 3] = 2*Iinj*I_calc[0, 3]
-            Ibeam[i_No - N_start, :] = I_calc/n_fils
+    for i in range(Ntraj):
+        tr = traj_list[i]
+        Ibeam[i, :] += integrate_traj(tr, lam, ne, coeffs, Te,
+                                      sigmaEff12, sigmaEff13, sigmaEff23)
+        Ibeam[i, 3] = 2*Iinj*Ibeam[i, 3]
 
     return Ibeam
 

@@ -29,12 +29,13 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # beam energy
-Emin, Emax, dEbeam = 148., 150., 2.
+Emin, Emax, dEbeam = 132., 132., 2.
 
 # set flags
 optimizeB2 = False
 optimizeA3B3 = False
-pass2AN = True
+calculate_zones = True
+pass2AN = False
 save_radref = False
 
 # A1 and B1 plates voltages
@@ -89,6 +90,9 @@ except FileNotFoundError:
 # load E for secondary beamline
 try:
     hb.read_plates('sec', geomTJ2, E)
+    # add diafragm for A3 plates to Geometry
+    hb.add_diafragm(geomTJ2, 'A3', 'A3d', diaf_width=0.4)
+    hb.add_diafragm(geomTJ2, 'A4', 'A4d', diaf_width=0.4)
     print('\n Secondary Beamline loaded')
 except FileNotFoundError:
     print('\n Secondary Beamline NOT FOUND')
@@ -257,6 +261,25 @@ else:
         traj_list_a3b3.append(tr)
     t2 = time.time()
     print('\n Secondary beamline calculated, t = {:.1f} s\n'.format(t2-t1))
+
+# %% Calculate ionization zones
+if calculate_zones:
+    t1 = time.time()
+    traj_list_zones = []
+    print('\n Ionization zones calculation')
+    for tr in copy.deepcopy(traj_list_a3b3):
+        print('\nEb = {}, UA2 = {:.2f}'.format(tr.Ebeam, tr.U['A2']))
+        tr = hb.calc_zones(tr, dt, E, B, geomTJ2, slits=[2],
+                           timestep_divider=6,
+                           eps_xy=1e-4, eps_z=1, dt_min=1e-11,
+                           no_intersect=True, no_out_of_bounds=True)
+        traj_list_zones.append(tr)
+        print('\n Trajectory saved')
+    t2 = time.time()
+    print('\n Ionization zones calculated, t = {:.1f} s\n'.format(t2-t1))
+
+    hbplot.plot_traj_toslits(tr, geomTJ2, config,
+                             slits=range(5), plot_fan=False)
 
 # %% Pass to ANALYZER
 if pass2AN:

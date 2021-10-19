@@ -47,7 +47,7 @@ def pde_solve_full(U, Uupper_plate, Ulower_plate, upper_plate_flag,
 # %%
 if __name__ == '__main__':
 
-    plts_name = 'A2'
+    plts_name = 'an'
     save_data = True
 
     # define voltages [Volts]
@@ -141,20 +141,21 @@ if __name__ == '__main__':
         Ulower_plate = 0.
         beamline = 'sec'
         # slits configuration [m]
-        n_slits, slit_dist, slit_w = 5, 0.012, 2e-3
+        n_slits, slit_dist, slit_w = 5, 0.012, 4e-3
         # analyzer geometry
         theta_an = 30.
         width = 0.2  # along Z [m]
-        thick = 0.01  # 0.004  # [m]
+        thick = 0.006  # 0.01  # [m]
         gap = 0.07  # distance between plates along Y [m]
 
-        YD1 = 0.02 + thick + np.cos(theta_an*drad) * (n_slits//2 * slit_dist
-                                                      + 0.5*slit_w)
-        YD2 = YD1
+        # YD1 = 0.02 + thick + np.cos(theta_an*drad) * (n_slits//2 * slit_dist
+        #                                               + 0.5*slit_w)
+        YD1 = thick + 0.05
+        YD2 = thick + 0.044  # YD1
         YD = YD1 + YD2
-        XD = 3 * np.sqrt(3) * YD
+        XD = 0.54  # 3 * np.sqrt(3) * YD
 
-        length = 1.2 * XD  # along X [m]
+        length = 0.808  # 1.2 * XD  # along X [m]
 
         # G coeff of the analyzer
         G = (XD*np.tan(theta_an*drad) - YD) / (4 * gap *

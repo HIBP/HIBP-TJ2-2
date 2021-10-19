@@ -30,7 +30,7 @@ def Te(rho, Te0):
 #    return Te0*rho/rho
 
 
-def integrate_traj(tr, get_rho, ne0, Te0, sigmaEff12, sigmaEff23):
+def integrate_traj(tr, get_rho, ne0, Te0, sigmaEff12, sigmaEff13, sigmaEff23):
     '''
     ne0, Te0 - central values
     sigmaV - interpolant over Te
@@ -57,15 +57,15 @@ def integrate_traj(tr, get_rho, ne0, Te0, sigmaEff12, sigmaEff23):
         x1, y1, z1 = tr.RV_prim[i-1, 0], tr.RV_prim[i-1, 1], tr.RV_prim[i-1, 2]
         x2, y2, z2 = tr.RV_prim[i, 0], tr.RV_prim[i, 1], tr.RV_prim[i, 2]
 
-        rho1 = get_rho(x1, y1, z1)
-        rho2 = get_rho(x2, y2, z2)
+        rho1 = get_rho([x1, y1, z1])[0]
+        rho2 = get_rho([x2, y2, z2])[0]
 
         if (rho1 <= 1) & (rho2 <= 1):
             dl = np.linalg.norm([x2-x1, y2-y1, z2-z1])
             r_loc = (rho1 + rho2) / 2
             ne_loc = 1e19 * ne(r_loc, ne0)
             Te_loc = Te(r_loc, Te0)
-            I1 += dl * sigmaEff12(Te_loc) * ne_loc / v0
+            I1 += dl * (sigmaEff12(Te_loc) + sigmaEff13(Te_loc)) * ne_loc / v0
             L1 += dl
 
     # integrating secondary trajectory
@@ -73,8 +73,8 @@ def integrate_traj(tr, get_rho, ne0, Te0, sigmaEff12, sigmaEff23):
         x1, y1, z1 = tr.RV_sec[i-1, 0], tr.RV_sec[i-1, 1], tr.RV_sec[i-1, 2]
         x2, y2, z2 = tr.RV_sec[i, 0], tr.RV_sec[i, 1], tr.RV_sec[i, 2]
 
-        rho1 = get_rho(x1, y1, z1, r_pl=r_plasma, elon=elon, R=R)
-        rho2 = get_rho(x2, y2, z2, r_pl=r_plasma, elon=elon, R=R)
+        rho1 = get_rho([x1, y1, z1])[0]
+        rho2 = get_rho([x2, y2, z2])[0]
 
         if (rho1 <= 1) & (rho2 <= 1):
             dl = np.linalg.norm([x2-x1, y2-y1, z2-z1])
@@ -84,21 +84,21 @@ def integrate_traj(tr, get_rho, ne0, Te0, sigmaEff12, sigmaEff23):
             I2 += dl * sigmaEff23(Te_loc) * ne_loc / v0
             L2 += dl
 
-    r_loc = get_rho(tr.RV_sec[0, 0], tr.RV_sec[0, 1], tr.RV_sec[0, 2])
+    r_loc = get_rho([tr.RV_sec[0, 0], tr.RV_sec[0, 1], tr.RV_sec[0, 2]])[0]
     if r_loc <= 0.99:
         Te_loc = Te(r_loc, Te0)
         ne_loc = 1e19 * ne(r_loc, ne0)
-        sigmaEff_loc = sigmaEff12(Te_loc) / v0
+        sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc)) / v0
     else:
         Te_loc = 0.1  # 0.
         ne_loc = 1e19 * ne0 * 1e-2  # 0.
-        sigmaEff_loc = sigmaEff12(Te_loc) / v0  # 0.
+        sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc)) / v0  # 0.
 
     # calculate total value with integrals
     lam = 0.005  # [m]
     Itot = 2 * ne_loc * sigmaEff_loc * lam * math.exp(-I1-I2)  # relative to I0
 
-    return np.array([tr.Ebeam, tr.U[0], r_loc, Itot, ne_loc, Te_loc, lam,
+    return np.array([tr.Ebeam, tr.U['A2'], r_loc, Itot, ne_loc, Te_loc, lam,
                      sigmaEff_loc, I1, I2, L1, L2])
 
 
@@ -145,245 +145,223 @@ def dSigmaEff(vtarget, Ttarget, m_target, sigma, vbeam, m_beam):
 
 
 # %%
-if __name__ == '__main__':
 
-    # plt.close('all')
+kB = 1.38064852e-23  # Boltzman [J/K]
+m_e = 9.10938356e-31  # electron mass [kg]
+m_p = 1.6726219e-27  # proton mass [kg]
+E = 132.0  # beam energy [keV]
 
-    # %%
+geom = geomTJ2
+config = '100_44_64'
 
-    kB = 1.38064852e-23  # Boltzman [J/K]
-    m_e = 9.10938356e-31  # electron mass [kg]
-    m_p = 1.6726219e-27  # proton mass [kg]
-    E = 132.0  # beam energy [keV]
+ne0 = 0.8  # [x10^19 m-3]
+Te0 = 1.3  # [keV]
 
-    geom = geomTJ2
-    config = '100_44_64'
-
-    ne0 = 5  # 1.5  # [x10^19 m-3]
-    Te0 = 2.0  # [keV]
-
-    # %% import trajectories
-    tr_list = copy.deepcopy(traj_list_passed)
-    # tr_list = copy.deepcopy(traj_list_a3b3)
+# %% import trajectories
+tr_list = copy.deepcopy(traj_list_passed)
+# tr_list = copy.deepcopy(traj_list_a3b3)
 #    filename = 'B{}_I{}//E80-320_UA2-20-80_alpha30_beta0_x250y-20z0.pkl'.format(str(int(Btor)), str(int(Ipl)))
 #    traj_list = hb.ReadTrajList(filename, dirname='output')
 
-    # %% LOAD IONIZATION RATES
-    ion = 'Cs'
+# %% LOAD IONIZATION RATES
+ion = 'Cs'
 
-    # <sigma*v> for Ion+ + e -> Ion2+
-    filename = 'D:\\Philipp\\Cross_sections\\' + ion + '\\rate' + ion + \
-        '+_e_' + ion + '2+.txt'
-    sigmaV12_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [m^3/s]
+# <sigma*v> for Ion+ + e -> Ion2+
+filename = 'D:\\NRCKI\\Cross_sections\\' + ion + '\\rate' + ion + \
+    '+_e_' + ion + '2+.txt'
+sigmaV12_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
+sigmaV12_e[:, 1] = sigmaV12_e[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
-    # <sigma*v> for Ion+ + e -> IOn3+
-    filename = 'D:\\NRCKI\\Cross_sections\\' + ion + '\\rate' + ion + \
-        '+_e_' + ion + '3+.txt'
-    sigmaV13_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
-    sigmaV13_e[:, 1] = sigmaV13_e[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
+# <sigma*v> for Ion+ + e -> IOn3+
+filename = 'D:\\NRCKI\\Cross_sections\\' + ion + '\\rate' + ion + \
+    '+_e_' + ion + '3+.txt'
+sigmaV13_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
+sigmaV13_e[:, 1] = sigmaV13_e[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
-    # <sigma*v> for Ion2+ + e -> Ion3+
-    filename = 'D:\\Philipp\\Cross_sections\\' + ion + '\\rate' + ion + \
-        '2+_e_' + ion + '3+.txt'
-    sigmaV23_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [m^3/s]
+# <sigma*v> for Ion2+ + e -> Ion3+
+filename = 'D:\\NRCKI\\Cross_sections\\' + ion + '\\rate' + ion + \
+    '2+_e_' + ion + '3+.txt'
+sigmaV23_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
+sigmaV23_e[:, 1] = sigmaV23_e[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
-    # %% interpolate rates
-    sigmaEff12_e_interp = interpolate.interp1d(sigmaV12_e[:, 0]/1e3,
-                                               sigmaV12_e[:, 1],
-                                               kind='linear')  # Te in [keV]
-    sigmaEff23_e_interp = interpolate.interp1d(sigmaV23_e[:, 0]/1e3,
-                                               sigmaV23_e[:, 1],
-                                               kind='linear')  # Te in [keV]
+# %% interpolate rates
+sigmaEff12_e_interp = interpolate.interp1d(sigmaV12_e[:, 0]/1e3,
+                                           sigmaV12_e[:, 1],
+                                           kind='linear')  # Te in [keV]
+sigmaEff13_e_interp = interpolate.interp1d(sigmaV13_e[:, 0]/1e3,
+                                           sigmaV13_e[:, 1],
+                                           kind='linear')  # Te in [keV]
+sigmaEff23_e_interp = interpolate.interp1d(sigmaV23_e[:, 0]/1e3,
+                                           sigmaV23_e[:, 1],
+                                           kind='linear')  # Te in [keV]
 
-    # %%
-    Itot = np.zeros([0, 12])
+# %%
+Itot = np.zeros([0, 12])
+for tr in tr_list:
+    I_integrated = integrate_traj(tr, rho_interp, ne0, Te0,
+                                  sigmaEff12_e_interp,
+                                  sigmaEff13_e_interp,
+                                  sigmaEff23_e_interp)
+    Itot = np.vstack([Itot, I_integrated[np.newaxis, :]])
+
+# set rho<0 at HFS
+distances = Itot[:-1, 2] - Itot[1:, 2]  # distances in rho
+mask = np.argwhere(distances < -1e-3)
+if mask.shape[0] == 0:
+    index = distances.shape[0]
+else:
+    index = mask[0][0]
+Itot[:index+1, 2] = Itot[:index+1, 2] * np.sign(Itot[0, 1])  # use sign of UA2
+Itot[index+1:, 2] = Itot[index+1:, 2] * np.sign(Itot[-1, 1])
+
+# get A2 and E lists
+Elist = np.array([tr.Ebeam for tr in tr_list])
+Elist = np.unique(Elist)
+A2list = np.array([tr.U['A2'] for tr in tr_list])
+A2list = np.unique(A2list)
+
+# %% plot results
+# plot scan
+fig, ax1 = plt.subplots()
+
+hbplot.set_axes_param(ax1, 'X (m)', 'Y (m)')
+
+# plot geometry
+geom.plot(ax1, axes='XY', plot_sep=True, plot_aim=True, plot_analyzer=False)
+
+A2list1 = []
+
+for tr in tr_list:
+    if tr.Ebeam == E:
+        A2list1.append(tr.U['A2'])
+        # plot primary
+        tr.plot_prim(ax1, axes='XY', color='k', full_primary=False)
+        # plot secondary
+        tr.plot_sec(ax1, axes='XY', color='r')
+
+# find UA2 max and min
+UA2_max = np.amax(np.array(A2list1))
+UA2_min = np.amin(np.array(A2list1))
+
+ax1.set_title('Ebeam={} keV, UA2:[{:.2f}, {:.2f}] kV, '
+              .format(E, UA2_min,  UA2_max) + config)
+
+# %% plot grid of attenuation
+fig, ax1 = plt.subplots()
+hbplot.set_axes_param(ax1, 'X (m)', 'Y (m)')
+
+# plot geometry
+geom.plot(ax1, axes='XY', plot_sep=True, plot_aim=True, plot_analyzer=False)
+
+N_A2 = A2list.shape[0]
+N_E = Elist.shape[0]
+
+A2_grid = np.full((N_E, 3, N_A2), np.nan)
+
+# find UA2 max and min
+UA2_max = np.amax(np.array(A2list))
+UA2_min = np.amin(np.array(A2list))
+# set title
+ax1.set_title('Eb = [{}, {}] keV, UA2 = [{:.2f}, {:.2f}] kV, '
+              .format(tr_list[0].Ebeam, tr_list[-1].Ebeam, UA2_min,
+                      UA2_max) + config)
+
+linestyle_E = '-'
+marker_E = 'p'
+E_grid = np.full((Itot.shape[0], 3), np.nan)
+c = Itot[:, 3]  # set color as Itot/I0
+k = -1
+# make a grid of constant E
+for i_E in range(0, N_E, 1):
+    mask = (abs(Itot[:, 0] - Elist[i_E]) < 0.01)
     for tr in tr_list:
-        I_integrated = integrate_traj(tr, rho_interp, ne0, Te0,
-                                      sigmaEff12_e_interp,
-                                      sigmaEff13_e_interp,
-                                      sigmaEff23_e_interp)
-        Itot = np.vstack([Itot, I_integrated[np.newaxis, :]])
+        if abs(tr.Ebeam - Elist[i_E]) < 0.1:
+            k += 1
+            # take the 1-st point of secondary trajectory
+            x = tr.RV_sec[0, 0]
+            y = tr.RV_sec[0, 1]
+            z = tr.RV_sec[0, 2]
+            E_grid[k, :] = [x, y, z]
 
-    # get A2 and E lists
-    Elist = np.array([tr.Ebeam for tr in tr_list])
-    Elist = np.unique(Elist)
-    A2list = np.array([tr.U[0] for tr in tr_list])
-    A2list = np.unique(A2list)
+sc = ax1.scatter(E_grid[:, 0], E_grid[:, 1], s=80,
+                 linestyle=linestyle_E,
+                 norm=colors.LogNorm(vmin=c.min(), vmax=c.max()),
+                 c=c,
+                 cmap='jet',
+                 marker=marker_E)
+plt.colorbar(sc)
 
-    # %% plot results
-    # plot scan
-    fig, ax1 = plt.subplots()
+# %% plot ne and Te profiles
+fig, axs = plt.subplots(1, 2, sharex=True)
+rho = np.arange(0, 1.01, 0.01)
+ne_avg = round(integrate.simps(ne(rho, ne0), rho), 1)
 
-    hbplot.set_axes_param(ax1, 'X (m)', 'Y (m)')
+axs[0].plot(rho, Te(rho, Te0))
+axs[0].set_ylabel(r'$\ T_e (keV)$')
 
-    # plot geometry
-    geom.plot_geom(ax1, axes='XY', plot_sep=False)
+axs[1].plot(rho, ne(rho, ne0))
+axs[1].set_ylabel(r'$\ n_e  (x10^{19} m^{-3})$')
+axs[1].set_title(r'$\ \barn_e =$' + str(ne_avg) + r'$\ x 10^{19} m^{-3}$')
 
-    A2list1 = []
+# format axes
+for ax in fig.get_axes():
+    ax.set_xlabel(r'$\rho$')
+    ax.set_xlim(0, 1.0)
+    ax.grid()
 
-    for tr in tr_list:
-        if tr.Ebeam == E:
-            A2list1.append(tr.U[0])
-            # plot primary
-            tr.plot_prim(ax1, axes='XY', color='k', full_primary=False)
-            # plot secondary
-            tr.plot_sec(ax1, axes='XY', color='r')
+# %% plot Idet/I0
+plt.figure()
+for Eb in Elist:
+    mask = (abs(Itot[:, 0] - Eb) < 0.01)
+    plt.semilogy(Itot[mask, 2], Itot[mask, 3], 'o',
+                 label='E={}'.format(Eb))
+plt.xlabel(r'$\rho_{SV}$')
+plt.ylabel(r'$\ I_{det} / I_0 $')
+plt.grid()
+plt.legend()
 
-    # find UA2 max and min
-    UA2_max = np.amax(np.array(A2list1))
-    UA2_min = np.amin(np.array(A2list1))
+# %% plot Idet/I0
+plt.figure()
+for Eb in Elist:
+    mask = (abs(Itot[:, 0] - Eb) < 0.01)
+    plt.semilogy(Itot[mask, 1], Itot[mask, 3], '-o',
+                 label='E={}'.format(Eb))
+plt.xlabel('UA2 (kV)')
+plt.ylabel(r'$\ I_{det} / I_0 $')
+plt.grid()
+plt.legend()
 
-    ax1.set_title('Ebeam={} keV, UA2:[{}, {}] kV, Btor = {} T, Ipl = {} MA'
-                  .format(E, UA2_min,  UA2_max, Btor, Ipl))
+# %% plot atten factor
+plt.figure()
+for Eb in Elist:
+    mask = (abs(Itot[:, 0] - Eb) < 0.01)
+    plt.semilogy(Itot[mask, 2], np.exp(-1*Itot[mask, 8]-1*Itot[mask, 9]),
+                 '-o', label='E={}'.format(Eb))
+plt.ylabel(r'Atten. factor ($e^{-R_1-R_2}$)')
+plt.xlabel(r'$\rho_{SV}$')
+plt.grid()
+plt.legend()
 
-    # %% plot grid of attenuation
-    fig, ax1 = plt.subplots()
-    hbplot.set_axes_param(ax1, 'X (m)', 'Y (m)')
+# %% plot rates
+plt.figure()
+plt.semilogx(sigmaV12_e[:, 0], sigmaV12_e[:, 1]*1e6, 'o', color='k',
+             label=r'$Cs^+$+e $\rightarrow$ $Cs^{2+}$+2e')
+Temp = np.linspace(min(sigmaV12_e[:, 0]), max(sigmaV12_e[:, 0]), num=10000)
+plt.semilogx(Temp, sigmaEff12_e_interp(Temp/1e3)*1e6, '-', color='k')
 
-    # plot geometry
-    geom.plot_geom(ax1, axes='XY', plot_sep=True)
+plt.semilogx(sigmaV23_e[:, 0], sigmaV23_e[:, 1]*1e6, '^', color='k',
+             label=r'$Cs^{2+}$+e $\rightarrow$ $Cs^{3+}$+2e')
+Temp = np.linspace(min(sigmaV23_e[:, 0]), max(sigmaV23_e[:, 0]), num=40000)
+plt.semilogx(Temp, sigmaEff23_e_interp(Temp/1e3)*1e6, '--', color='k')
 
-    N_A2 = A2list.shape[0]
-    N_E = Elist.shape[0]
+plt.xlabel(r'$E_{e}$ (eV)')
+plt.ylabel(r'<$\sigma$V> ($cm^3/s$)')
+plt.grid(linestyle='--', which='both')
+leg = plt.legend()
+for artist, text in zip(leg.legendHandles, leg.get_texts()):
+    col = artist.get_color()
+    if isinstance(col, np.ndarray):
+        col = col[0]
+    text.set_color(col)
 
-    A2_grid = np.full((N_E, 3, N_A2), np.nan)
-
-    # find UA2 max and min
-    UA2_max = np.amax(np.array(A2list))
-    UA2_min = np.amin(np.array(A2list))
-    # set title
-    ax1.set_title('Eb = [{}, {}] keV, UA2 = [{}, {}] kV,'
-                  ' Btor = {} T, Ipl = {} MA'
-                  .format(tr_list[0].Ebeam, tr_list[-1].Ebeam, UA2_min,
-                          UA2_max, Btor, Ipl))
-
-    linestyle_E = '-'
-    marker_E = 'p'
-    E_grid = np.full((Itot.shape[0], 3), np.nan)
-    c = Itot[:, 3]  # set color as Itot/I0
-    k = -1
-    # make a grid of constant E
-    for i_E in range(0, N_E, 1):
-        mask = (abs(Itot[:, 0] - Elist[i_E]) < 0.01)
-        for tr in tr_list:
-            if abs(tr.Ebeam - Elist[i_E]) < 0.1:
-                k += 1
-                # take the 1-st point of secondary trajectory
-                x = tr.RV_sec[0, 0]
-                y = tr.RV_sec[0, 1]
-                z = tr.RV_sec[0, 2]
-                E_grid[k, :] = [x, y, z]
-
-    sc = ax1.scatter(E_grid[:, 0], E_grid[:, 1], s=80,
-                     linestyle=linestyle_E,
-                     norm=colors.LogNorm(vmin=c.min(), vmax=c.max()),
-                     c=c,
-                     cmap='jet',
-                     marker=marker_E)
-    plt.colorbar(sc)
-
-    # %% plot grid of angles
-    angles = np.full((Itot.shape[0], 2), np.nan)
-    k = -1
-    for tr in tr_list:
-        k += 1
-        angles[k, :] = hb.calc_angles(tr.RV_sec[-1, 3:])
-
-    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, sharex=True)
-    # plot geometry
-    geom.plot_geom(ax1, axes='XY', plot_sep=True)
-    geom.plot_geom(ax2, axes='XY', plot_sep=True)
-
-    hbplot.set_axes_param(ax1, 'X (m)', 'Y (m)')
-    hbplot.set_axes_param(ax2, 'X (m)', 'Y (m)')
-
-    # plot grid with alpha coloring
-    sc = ax1.scatter(E_grid[:, 0], E_grid[:, 1], s=80,
-                     linestyle=linestyle_E,
-                     c=angles[:, 0],
-                     cmap='jet',
-                     marker=marker_E)
-    plt.colorbar(sc, ax=ax1, label=r'$\alpha (deg)$')
-
-    # plot grid with beta coloring
-    sc = ax2.scatter(E_grid[:, 0], E_grid[:, 1], s=80,
-                     linestyle=linestyle_E,
-                     c=angles[:, 1],
-                     cmap='jet',
-                     marker=marker_E)
-    plt.colorbar(sc, ax=ax2, label=r'$\beta (deg)$')
-
-    # %% plot ne and Te profiles
-    fig, axs = plt.subplots(1, 2, sharex=True)
-    rho = np.arange(0, 1.01, 0.01)
-    ne_avg = round(integrate.simps(ne(rho, ne0), rho), 1)
-
-    axs[0].plot(rho, Te(rho, Te0))
-    axs[0].set_ylabel(r'$\ T_e (keV)$')
-
-    axs[1].plot(rho, ne(rho, ne0))
-    axs[1].set_ylabel(r'$\ n_e  (x10^{19} m^{-3})$')
-    axs[1].set_title(r'$\ \barn_e =$' + str(ne_avg) + r'$\ x 10^{19} m^{-3}$')
-
-    # format axes
-    for ax in fig.get_axes():
-        ax.set_xlabel(r'$\rho$')
-        ax.set_xlim(0, 1.0)
-        ax.grid()
-
-    # %% plot Idet/I0
-    plt.figure()
-    for Eb in Elist:
-        mask = (abs(Itot[:, 0] - Eb) < 0.01)
-        plt.semilogy(Itot[mask, 2], Itot[mask, 3], 'o',
-                     label='E={}'.format(Eb))
-    plt.xlabel(r'$\rho_{SV}$')
-    plt.ylabel(r'$\ I_{det} / I_0 $')
-    plt.grid()
-    plt.legend()
-
-    # %% plot Idet/I0
-    plt.figure()
-    for Eb in Elist:
-        mask = (abs(Itot[:, 0] - Eb) < 0.01)
-        plt.semilogy(Itot[mask, 1], Itot[mask, 3], '-o',
-                     label='E={}'.format(Eb))
-    plt.xlabel('UA2 (kV)')
-    plt.ylabel(r'$\ I_{det} / I_0 $')
-    plt.grid()
-    plt.legend()
-
-    # %% plot atten factor
-    plt.figure()
-    for Eb in Elist:
-        mask = (abs(Itot[:, 0] - Eb) < 0.01)
-        plt.semilogy(Itot[mask, 2], np.exp(-1*Itot[mask, 8]-1*Itot[mask, 9]),
-                     '-o', label='E={}'.format(Eb))
-    plt.ylabel(r'Atten. factor ($e^{-R_1-R_2}$)')
-    plt.xlabel(r'$\rho_{SV}$')
-    plt.grid()
-    plt.legend()
-
-    # %% plot rates
-    plt.figure()
-    plt.semilogx(sigmaV12_e[:, 0], sigmaV12_e[:, 1]*1e6, 'o', color='k',
-                 label=r'$Tl^+$+e $\rightarrow$ $Tl^{2+}$+2e')
-    Temp = np.linspace(min(sigmaV12_e[:, 0]), max(sigmaV12_e[:, 0]), num=10000)
-    plt.semilogx(Temp, sigmaEff12_e_interp(Temp/1e3)*1e6, '-', color='k')
-
-    plt.semilogx(sigmaV23_e[:, 0], sigmaV23_e[:, 1]*1e6, '^', color='k',
-                 label=r'$Tl^{2+}$+e $\rightarrow$ $Tl^{3+}$+2e')
-    Temp = np.linspace(min(sigmaV23_e[:, 0]), max(sigmaV23_e[:, 0]), num=40000)
-    plt.semilogx(Temp, sigmaEff23_e_interp(Temp/1e3)*1e6, '--', color='k')
-
-    plt.xlabel(r'$E_{e}$ (eV)')
-    plt.ylabel(r'<$\sigma$V> ($cm^3/s$)')
-    plt.grid(linestyle='--', which='both')
-    leg = plt.legend()
-    for artist, text in zip(leg.legendHandles, leg.get_texts()):
-        col = artist.get_color()
-        if isinstance(col, np.ndarray):
-            col = col[0]
-        text.set_color(col)
-
-    plt.show()
+plt.show()
