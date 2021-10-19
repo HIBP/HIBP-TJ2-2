@@ -265,13 +265,14 @@ else:
 # %% Calculate ionization zones
 if calculate_zones:
     t1 = time.time()
+    slits = [2]
     traj_list_zones = []
     print('\n Ionization zones calculation')
     for tr in copy.deepcopy(traj_list_a3b3):
         print('\nEb = {}, UA2 = {:.2f}'.format(tr.Ebeam, tr.U['A2']))
-        tr = hb.calc_zones(tr, dt, E, B, geomTJ2, slits=[2],
+        tr = hb.calc_zones(tr, dt, E, B, geomTJ2, slits=slits,
                            timestep_divider=6,
-                           eps_xy=1e-4, eps_z=1, dt_min=1e-11,
+                           eps_xy=1e-4, eps_z=1, dt_min=1e-12,
                            no_intersect=True, no_out_of_bounds=True)
         traj_list_zones.append(tr)
         print('\n Trajectory saved')
@@ -279,7 +280,7 @@ if calculate_zones:
     print('\n Ionization zones calculated, t = {:.1f} s\n'.format(t2-t1))
 
     hbplot.plot_traj_toslits(tr, geomTJ2, config,
-                             slits=range(5), plot_fan=False)
+                             slits=slits, plot_fan=False)
 
 # %% Pass to ANALYZER
 if pass2AN:
