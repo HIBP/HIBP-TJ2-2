@@ -143,6 +143,7 @@ def plot_B_stream(B, volume_corner1, volume_corner2, resolution,
                    By[:, :, z_cut].swapaxes(0, 1), color=color, density=dens)
     ax2.streamplot(x, z, Bx[:, y_cut, :].swapaxes(0, 1),
                    Bz[:, y_cut, :].swapaxes(0, 1), color=color, density=dens)
+    plt.show()
 
 
 # %% matplotlib plot 3D
@@ -206,6 +207,7 @@ def plot_contours(X, Y, Z, U, upper_plate_flag, lower_plate_flag,
 
     # clb = plt.colorbar(CS)
     # clb.set_label('V', labelpad=-40, y=1.05, rotation=0)
+    plt.show()
 
 
 # %%
@@ -231,6 +233,7 @@ def plot_contours_zy(X, Y, Z, U, upper_plate_flag, lower_plate_flag,
 
     # clb = plt.colorbar(CS)
     # clb.set_label('V', labelpad=-40, y=1.05, rotation=0)
+    plt.show()
 
 
 # %%
@@ -253,6 +256,7 @@ def plot_contours_xz(X, Y, Z, U, upper_plate_flag, lower_plate_flag,
              z[:, y_cut, :][upper_plate_flag[:, y_cut, :]], 'o', color='k')
     ax1.plot(x[:, y_cut, :][lower_plate_flag[:, y_cut, :]],
              z[:, y_cut, :][lower_plate_flag[:, y_cut, :]], 'o', color='k')
+    plt.show()
 
 
 # %%
@@ -275,6 +279,7 @@ def plot_stream_zy(X, Y, Z, Ex, Ey, Ez, upper_plate_flag, lower_plate_flag,
              y[x_cut, :, :][upper_plate_flag[x_cut, :, :]], 'o', color='r')
     ax1.plot(z[x_cut, :, :][lower_plate_flag[x_cut, :, :]],
              y[x_cut, :, :][lower_plate_flag[x_cut, :, :]], 'o', color='k')
+    plt.show()
 
 
 # %%
@@ -319,6 +324,7 @@ def plot_stream(X, Y, Z, Ex, Ey, Ez, upper_plate_flag, lower_plate_flag,
              y[x_cut, :, :][upper_plate_flag[x_cut, :, :]], 'o', color='k')
     ax2.plot(z[x_cut, :, :][lower_plate_flag[x_cut, :, :]],
              y[x_cut, :, :][lower_plate_flag[x_cut, :, :]], 'o', color='k')
+    plt.show()
 
 
 # %%
@@ -370,6 +376,7 @@ def plot_quiver(X, Y, Z, Ex, Ey, Ez):
 #                               linewidth=2, linestyle='--', edgecolor='k',
 #                               facecolor='none')
 #    ax3.add_patch(domain)
+    plt.show()
 
 
 # %%
@@ -410,6 +417,7 @@ def plot_quiver3d(X, Y, Z, Ex, Ey, Ez, UP_rotated, LP_rotated, n_skip=5):
                 Ez[skip], length=0.01, normalize=True)
 
     ax.axis('equal')
+    plt.show()
 
 
 # %%
@@ -428,6 +436,7 @@ def plot_geometry(ax, camera_data_filename='TJII_camera.dat',
             separatrix = np.loadtxt(separatrix_data_filename)
             ax.plot(separatrix[:, 0] + major_radius, separatrix[:, 1],
                     color='b')  # 'tab:orange')
+    plt.show()
 
 
 # %%
@@ -497,6 +506,7 @@ def plot_traj(traj_list, geom, Ebeam, UA2, config, full_primary=False,
                 tr.plot_sec(ax2, axes='XZ', color='r')
 
             break
+    plt.show()
 
 
 # %%
@@ -579,6 +589,7 @@ def plot_fan(traj_list, geom, Ebeam, UA2, config, plot_traj=True,
                               .format(Ebeam, UA2, tr.U['B2'], config))
                 break
     ax1.legend()
+    plt.show()
 
 
 # %%
@@ -644,7 +655,7 @@ def plot_scan(traj_list, geom, Ebeam, config, full_primary=False,
 
     ax1.set_title('Ebeam={} keV, UA2:[{:.2f}, {:.2f}] kV, {}'
                   .format(Ebeam, UA2_min,  UA2_max, config))
-
+    plt.show()
 
 # %%
 def plot_grid(traj_list, geom, config, reflect=True, onlyE=False,
@@ -741,8 +752,8 @@ def plot_grid(traj_list, geom, config, reflect=True, onlyE=False,
                  label=str(round(A2list[i_A2], 1))+' kV')
 
     ax1.legend()
-
 #    ax1.set(xlim=(0.9, 4.28), ylim=(-1, 1.5), autoscale_on=False)
+    plt.show()
 
 
 # %%
@@ -813,6 +824,7 @@ def plot_grid_a3b3(traj_list, geom, config,
                      cmap='jet',
                      marker=marker_E)
     plt.colorbar(sc, ax=ax2, label='B3, kV')
+    plt.show()
 
 
 # %%
@@ -869,6 +881,7 @@ def plot_traj_toslits(tr, geom, config, slits=[2], plot_fan=True):
                      markerfacecolor='white')
             ax3.plot(fan_tr[0, 2], fan_tr[0, 1], 'o', color=c,
                      markerfacecolor='white')
+    plt.show()
 
 
 # %%
@@ -932,6 +945,7 @@ def plot_fat_beam(fat_beam_list, geom, config, n_slit='all', scale=3):
                          markerfacecolor='white')
                 ax3.plot(fan_tr[0, 2], fan_tr[0, 1], 'o', color=c,
                          markerfacecolor='white')
+    plt.show()
 
 
 # %%
@@ -1020,6 +1034,7 @@ def plot_svs(fat_beam_list, geom, config, n_slit='all',
             hull_pts_zy = hull_zy.exterior.coords.xy
             ax3.fill(hull_pts_zy[0], hull_pts_zy[1], '--', color=c)
             # ax3.plot(hull_pts_zy[0], hull_pts_zy[1], color='k', lw=0.5)
+    plt.show()
 
 
 # %%
@@ -1082,6 +1097,7 @@ def plot_sec_angles(traj_list, config, Ebeam='all'):
     ax2.legend()
     ax1.axis('tight')
     ax2.axis('tight')
+    plt.show()
 
 
 # %%
@@ -1116,3 +1132,4 @@ def plot_lam(traj_list, config, rho_interp, Ebeam='all', slits=range(5)):
             ax2.plot(rho_list, lam_list, '-o', label='slit ' + str(i_slit+1))
     ax1.legend()
     ax2.legend()
+    plt.show()
