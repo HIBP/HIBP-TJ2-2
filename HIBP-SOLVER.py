@@ -12,6 +12,7 @@ import hibpplotlib as hbplot
 import define_geometry as defgeom
 import copy
 import time
+import sys
 
 # %% set up main parameters
 # choose analyzer number
@@ -203,7 +204,7 @@ for Ebeam in Ebeam_range:
             traj_list_B2.append(tr)
             print('\n Trajectory saved, UB2={:.2f} kV'.format(tr.U['B2']))
         else:
-            print('NOT saved, sth wrong')
+            print('NOT saved, sth is wrong')
         # traj_list_B2.append(tr)
 
     t2 = time.time()
@@ -217,6 +218,7 @@ traj_list_passed = copy.deepcopy(traj_list_B2)
 
 # %% Save traj list
 hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
+# sys.exit()
 
 # %% Additional plots
 hbplot.plot_grid(traj_list_passed, geomTJ2, config, onlyE=True,
