@@ -44,7 +44,7 @@ UA1, UB1 = 0.1, 0.75  # [kV]
 
 # UA2 voltages
 UA2min, UA2max, dUA2 = -9., 5., 2.
-NA2_points = 35
+NA2_points = 40
 
 # B2 plates voltage
 UB2, dUB2 = 2.0, 35.0  # [kV], [kV/m]
@@ -146,6 +146,8 @@ for Ebeam in Ebeam_range:
     #     shot = '50497'
 
     # shot = '49873'
+    shot = '48431'
+
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
     print('\n>>INPUT FILE: ', input_fname)
     if input_fname != '':
@@ -230,6 +232,8 @@ hbplot.plot_scan(traj_list_passed, geomTJ2, Ebeam, config,
                  full_primary=False, plot_analyzer=True,
                  plot_det_line=True, subplots_vertical=True, scale=5)
 # hbplot.plot_sec_angles(traj_list_passed, config, Ebeam='all')
+
+sys.exit()
 
 # %% Optimize Secondary Beamline
 t1 = time.time()

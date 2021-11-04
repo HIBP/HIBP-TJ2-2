@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri May 25 10:45:44 2018
-
-@author: Philipp
+Import TS profile for TJ-II stellarator
 """
 import numpy as np
 from matplotlib import pyplot as plt
@@ -42,14 +40,16 @@ def NeFit(param, p1, p2, p3):
 #     return y0 + a*np.exp(-0.5*((x-xc)/w)**2)
 
 
-# def TeFit(x, y0, a, b, w):
-def TeFit(x, a, b):
+def TeFit(x, y0, a, b, w):
+# def TeFit(x, a, b):
 # def TeFit(x, y0, A, x_c, w, a, b):
     ''' Te fit function
     '''
-#    return y0 + a*np.exp(-b*(x/w)**2) # Gauss
+    return y0 + a*np.exp(-(x**2) / (2*(0.29)**2)) # Gauss
     # return y0*(np.exp(-a*(1-x**2) - w*(1-x**4)) - 1)
-    return a*((1 + b*np.abs(x)**0.9)*np.exp(-b*np.abs(x)**0.9) - (1 + b)*np.exp(-b))
+
+    # p = 1
+    # return a*((1 + b*np.abs(x)**p)*np.exp(-b*np.abs(x)**p) - (1 + b)*np.exp(-b))
 
     # z = (x - x_c)/w
     # return y0 + A*np.exp(-0.5 * z**2) / (w*np.sqrt(2*np.pi)) * (1 + np.abs( (a/6)*(z**3 - 3*z) + (b/24)*(z**4 - 6*z**3 + 3) ))
@@ -61,25 +61,25 @@ def TeFit(x, a, b):
 # %%
 def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
              # coeffsTe0= [1, 1, 1, 1, 1, 1],
-              coeffsTe0=[1, 1],
+              coeffsTe0=[1, 1, 1, 1],
              # coeffsTe0 = [0.05, -5, 2, 1.0],
              coeffsNe0=[1, 1, 1], plot_TS=True):
     ''' TeFit and NeFit are functions for Ne and Te fitting
     '''
     # import Te
-    filename = 'D:\\cache\\Thomson.2\\PerfilTe_' + str(shot) + '_' + \
+    filename = 'E:\\cache\\Thomson.2\\PerfilTe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     Te = np.loadtxt(filename)  # [0]rho [1]Te
     # import Te errors
-    filename = 'D:\\cache\\Thomson.2\\PerfildTe_' + str(shot) + '_' + \
+    filename = 'E:\\cache\\Thomson.2\\PerfildTe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     TeErr = np.loadtxt(filename)  # [0]rho [1]TeErr
     # import Ne
-    filename = 'D:\\cache\\Thomson.2\\PerfilNe_' + str(shot) + '_' + \
+    filename = 'E:\\cache\\Thomson.2\\PerfilNe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     Ne = np.loadtxt(filename)  # [0]rho [1]Ne
     # import Ne errors
-    filename = 'D:\\cache\\Thomson.2\\PerfildNe_' + str(shot) + '_' + \
+    filename = 'E:\\cache\\Thomson.2\\PerfildNe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     NeErr = np.loadtxt(filename)  # [0]rho [1]NeErr
 
@@ -94,7 +94,7 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
     # %% make fitting of TS data
     # fitting of Te
     rho_min = -0.5
-    rho_max = 0.6
+    rho_max = 0.05
     mask_Te = (Te[:, 0] > rho_min) & (Te[:, 0] < rho_max)
     Te_data = Te[mask_Te]
 
@@ -204,7 +204,7 @@ if __name__ == '__main__':
 
     try:
         # load ECE
-        filename = 'D:\\cache\\ECE_dat\\' + str(shot) + '_ECE' + '.dat'
+        filename = 'E:\\cache\\ECE_dat\\' + str(shot) + '_ECE' + '.dat'
         ECE = np.loadtxt(filename)  # [0]t [1]ECE1 [2]t [3]ECE2 [4]t ...
         print('ECE loaded')
         # delete time columns except [0]

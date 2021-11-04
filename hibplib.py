@@ -59,19 +59,19 @@ class Traj():
         self.beta = beta
         self.U = U
         self.RV0 = np.array([np.hstack((r0, V0))])  # initial condition
-
-        self.RV_prim = self.RV0  # array with r,V for the whole trajectory
+        # array with r,V for the primary trajectory
+        self.RV_prim = self.RV0
         self.tag_prim = [1]
-
+        # array with r,V for the secondary trajectory
         self.RV_sec = np.array([[]])
         self.tag_sec = [2]
-
         # list to contain RV of the whole fan:
         self.Fan = []
         # time step for primary orbit:
         self.dt1 = dt
         # time step for secondary orbit:
         self.dt2 = dt
+        # flags
         self.IsAimXY = False
         self.IsAimZ = False
         self.fan_ok = False
