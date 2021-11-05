@@ -15,7 +15,7 @@ R, Z = np.meshgrid(r, z)
 
 fig, ax = plt.subplots()
 cs = ax.contour(R, Z, data[:, 5].reshape(R.shape).T,
-                levels=np.linspace(0.05, 0.99, 15))
+                levels=np.linspace(0.05, 0.9999, 15))
 ax.axis('equal')
 
 # %%get contours coordinates and contour levels

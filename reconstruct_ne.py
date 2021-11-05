@@ -49,18 +49,18 @@ def integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
     index_stop = np.argwhere(distances < 1e-5)[0, 0]
 
     # integrals over primary and secondary trajectory
-    I1, I2, L1, L2 = 0., 0., 0., 0.
+    I1, I2, L1, L2, dl = 0., 0., 0., 0., 0.
     # integration loop
     # integrating primary trajectory
     for i in range(1, index_stop+1):
-        x1, y1, z1 = tr.RV_prim[i-1, :3]
-        x2, y2, z2 = tr.RV_prim[i, :3]
+        r1 = tr.RV_prim[i-1, :3]
+        r2 = tr.RV_prim[i, :3]
 
-        rho1 = get_rho([x1, y1, z1])[0]
-        rho2 = get_rho([x2, y2, z2])[0]
+        rho1 = get_rho(r1)[0]
+        rho2 = get_rho(r2)[0]
 
-        if (rho1 <= 1) and (rho2 <= 1):
-            dl = np.linalg.norm([x2-x1, y2-y1, z2-z1])
+        if (rho1 <= 1.0) and (rho2 <= 1.0):
+            dl = np.linalg.norm(r1 - r2)
             r_loc = (rho1 + rho2) / 2
             ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
             Te_loc = Te(r_loc)
@@ -69,28 +69,28 @@ def integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
 
     # integrating secondary trajectory
     for i in range(1, tr.RV_sec.shape[0]):
-        x1, y1, z1 = tr.RV_sec[i-1, :3]
-        x2, y2, z2 = tr.RV_sec[i, :3]
+        r1 = tr.RV_sec[i-1, :3]
+        r2 = tr.RV_sec[i, :3]
 
-        rho1 = get_rho([x1, y1, z1])[0]
-        rho2 = get_rho([x2, y2, z2])[0]
+        rho1 = get_rho(r1)[0]
+        rho2 = get_rho(r2)[0]
 
-        if (rho1 <= 1) and (rho2 <= 1):
-            dl = np.linalg.norm([x2-x1, y2-y1, z2-z1])
+        if (rho1 <= 1.0) and (rho2 <= 1.0):
+            dl = np.linalg.norm(r1 - r2)
             r_loc = (rho1 + rho2) / 2
             ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
             Te_loc = Te(r_loc)
             I2 += dl * sigmaEff23(Te_loc) * ne_loc
             L2 += dl
 
-    r_loc = get_rho([tr.RV_sec[0, 0], tr.RV_sec[0, 1], tr.RV_sec[0, 2]])[0]
+    r_loc = get_rho(tr.RV_sec[0, :3])[0]
     if r_loc <= 0.99:
         Te_loc = Te(r_loc)
         ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
         sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))
     else:
         # simple assumption for SOL
-        Te_loc = 0.1  # 0.
+        Te_loc = 0.04  # 0.
         ne_loc = 1e19 * 1e-2  # 0.
         sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))  # 0.
 
@@ -299,12 +299,6 @@ def dSigmaEff(vtarget, Ttarget, m_target, sigma, vbeam, m_beam):
 # %%
 plt.close('all')
 
-fname = 'E132-132_UA2-7-3_alpha74.1_beta-11.7_x270y-45z-17.pkl'
-traj_list = hb.read_traj_list(fname, dirname='output//100_44_64')
-
-# lam_interp = interpolate.interp1d(tr.rho_ion,
-#                                   signal.savgol_filter(tr.lam, 5, 3))  # [m]
-
 # %%
 kB = 1.38064852e-23  # Boltzman [J/K]
 m_e = 9.10938356e-31  # electron mass [kg]
@@ -398,21 +392,32 @@ for artist, text in zip(leg.legendHandles, leg.get_texts()):
 
 plt.show()
 
+# %% import trajectories
+fname = 'E132-132_UA2-7-3_alpha74.1_beta-11.7_x270y-45z-17.pkl'
+# fname = 'E144-144_UA2-8-2_alpha74.1_beta-11.7_x270y-45z-17.pkl'
+traj_list = hb.read_traj_list(fname, dirname='output//100_44_64')
+
+print('list of trajectories loaded ' + fname)
+
+# lam_interp = interpolate.interp1d(tr.rho_ion,
+#                                   signal.savgol_filter(tr.lam, 5, 3))  # [m]
+
 # %% import experimental Itot(rho)
 # rho_Ua2 should be generated in import_ro_config.py
-shot = 48431  # 47152 #44162 #44543 #47152 #48431 #44584
-# file should contain t, Itot, A2, rho
-# filename = 'D:\\Philipp\\TJ-II_programs\\Itot\\' + str(shot) + '.dat'  # + '_ne04.dat'
-filename = 'D:\\Philipp\\TJ-II_programs\\Itot\\' + str(shot) + '_ne04.dat'
+shot = 48431  # 48435  # 47152 #44162 #44543 #47152 #48431 #44584
+# file should contain t, Itot, A2, rho, Densidad2_
+filename = 'D:\\Philipp\\TJ-II_programs\\Itot\\' + str(shot) + '.dat'  # + '_ne04.dat'
+# filename = 'D:\\Philipp\\TJ-II_programs\\Itot\\' + str(shot) + '_ne04.dat'
 Itot = np.loadtxt(filename)
 # [0] time, [1] Itot, [2] Alpha2, [3] rho, [4] Densidad2_
 Itot = np.delete(Itot, [2, 4, 6], axis=1)
+print('experimental Itot loaded ' + filename)
 
 neAvg = np.mean(Itot[:, 4])  # line averagend ne [e19 m-3]
-neAvg = 0.46  # 3.6
+neAvg = 0.8  # 0.46  # 3.6
 print('\n****** ne = {:.2f}\n'.format(neAvg))
 
-Iinj = 100e-6  # injection beam current [A]
+Iinj = 52e-6  # 100e-6  # injection beam current [A]
 kAmpl = 1 * 1e7  # amplification coefficient
 
 # flag to optimize I0
@@ -434,8 +439,8 @@ addPlots = False
 Itot_interp = interpolate.interp1d(Itot[:, 2], Itot[:, 1]/kAmpl)
 
 # %% import Thomson scattering data
-shotTS = 48431  # 45784  # 49867  #48441  # 48431  # 48428 #48441 #47152 #48441 #47152
-t_TS = 1150  # 1270  # 1225 #1250  # 1150  # 1250
+shotTS = 48441  #48435  # 48431  #45784  # 49867 # 48428 #47152 #47152
+t_TS = 1250  # 1270  # 1225 #1250  # 1150  # 1250
 Te, TeErr, coeffsTe, Ne, NeErr, coeffsNe = ImportTS(shotTS, t_TS, neAvg,
                                                     TeFit, NeFit)
 # coeffsNe = np.array([141.4147757, 5.4696319, -36.97264695])
@@ -470,7 +475,7 @@ if optimizeI0:
 
 # %%
 if optimizeNe:
-    print('start optimization')
+    print('start optimization ne(rho)')
     print('\n starting coeffs: \n{}'.format(coeffsNe))
 
     t1 = time.time()

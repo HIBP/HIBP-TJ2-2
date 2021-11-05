@@ -40,12 +40,12 @@ def NeFit(param, p1, p2, p3):
 #     return y0 + a*np.exp(-0.5*((x-xc)/w)**2)
 
 
-def TeFit(x, y0, a, b, w):
+def TeFit(x, y0, a, w):
 # def TeFit(x, a, b):
 # def TeFit(x, y0, A, x_c, w, a, b):
     ''' Te fit function
     '''
-    return y0 + a*np.exp(-(x**2) / (2*(0.29)**2)) # Gauss
+    return y0 + a*np.exp(-(x**2) / (2*(w)**2)) # Gauss
     # return y0*(np.exp(-a*(1-x**2) - w*(1-x**4)) - 1)
 
     # p = 1
@@ -61,7 +61,7 @@ def TeFit(x, y0, a, b, w):
 # %%
 def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
              # coeffsTe0= [1, 1, 1, 1, 1, 1],
-              coeffsTe0=[1, 1, 1, 1],
+              coeffsTe0=[1, 1, 1],
              # coeffsTe0 = [0.05, -5, 2, 1.0],
              coeffsNe0=[1, 1, 1], plot_TS=True):
     ''' TeFit and NeFit are functions for Ne and Te fitting
@@ -94,7 +94,7 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
     # %% make fitting of TS data
     # fitting of Te
     rho_min = -0.5
-    rho_max = 0.05
+    rho_max = 0.3
     mask_Te = (Te[:, 0] > rho_min) & (Te[:, 0] < rho_max)
     Te_data = Te[mask_Te]
 
@@ -104,8 +104,8 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
 #    NeErr = NeErr[mask]
 
     # add boundary zeros
-    Te_data = np.vstack(([[-1, 0.005]], Te_data))
-    Te_data = np.vstack((Te_data, [[1, 0.005]]))
+    Te_data = np.vstack(([[-1, 0.04], [-0.8, 0.06]]*500, Te_data))
+    Te_data = np.vstack((Te_data, [[0.8, 0.06], [1, 0.04]]*500))
 
     poptTe, pcovTe = optimize.curve_fit(TeFit, Te_data[:, 0], Te_data[:, 1],
                                         p0=coeffsTe0, maxfev=5000)
@@ -185,8 +185,8 @@ def saveECEcalib(filename, calib):
 if __name__ == '__main__':
 
     plt.close('all')
-    shot = 48431  #50533  # 48435  # 48441  #48428  #48431 #48435 #47152 #44354 # 48441
-    t_TS = 1150  #1140  # 1250 #1250 #1250
+    shot = 48441 # 48431  #50533  # 48435  # 48441  #48428  #48431 #48435 #47152 #44354 # 48441
+    t_TS = 1250  #1140  # 1250 #1250 #1250
     neAvg = 0.8  #0.46  # line-averaged density [e19 m-3]
 
 #    plt.close('all')

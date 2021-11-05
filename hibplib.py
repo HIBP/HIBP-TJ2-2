@@ -320,10 +320,16 @@ class Traj():
             # check XY flag
             if self.IsAimXY:
                 # insert RV_new into primary traj
-                index = np.nanargmin(np.linalg.norm(self.RV_prim[:, :3] -
-                                                    RV_new[0, :3], axis=1))
-                self.RV_prim = np.insert(self.RV_prim, index+1, RV_new, axis=0)
-                self.tag_prim = np.insert(self.tag_prim, index+1, 11, axis=0)
+                # find the index of the point in primary traj closest to RV_new
+                ind = np.nanargmin(np.linalg.norm(self.RV_prim[:, :3] -
+                                                  RV_new[0, :3], axis=1))
+                if is_between(self.RV_prim[ind, :3],
+                              self.RV_prim[ind+1, :3], RV_new[0, :3], eps=1e-4):
+                    i2insert = ind+1
+                else:
+                    i2insert = ind
+                self.RV_prim = np.insert(self.RV_prim, i2insert, RV_new, axis=0)
+                self.tag_prim = np.insert(self.tag_prim, i2insert, 11, axis=0)
                 break
             # check if the new secondary traj is lower than r_aim
             if (not twisted_fan and
