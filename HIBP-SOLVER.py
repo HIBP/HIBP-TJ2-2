@@ -285,7 +285,7 @@ if calculate_zones:
     t2 = time.time()
     print('\n Ionization zones calculated, t = {:.1f} s\n'.format(t2-t1))
 
-    hbplot.plot_traj_toslits(tr, geomTJ2, config,
+    hbplot.plot_traj_toslits([tr], geomTJ2, config,
                              slits=slits, plot_fan=False)
 
 # %% Pass to ANALYZER

@@ -3,21 +3,23 @@ import hibplib as hb
 import hibpplotlib as hbplot
 import copy
 import matplotlib.pyplot as plt
+import time
 
 # %%
 ''' test FAT beam with focusing
 '''
-Ebeam = 140.
-UA2 = 3.0
+Ebeam = 132.
+UA2 = 2.0
 
-n_slits = 7
+# n_slits = 5
 # add slits to Geometry
-# geomT15.add_slits(n_slits=n_slits, slit_dist=0.01, slit_w=5e-3,
-#                   slit_l=0.1, slit_gamma=-20.)
-r_slits = geomT15.slits_edges
-rs = geomT15.r_dict['slit']
+# geomTJ2.add_slits(n_slits=n_slits, slit_dist=0.012, slit_w=4e-3,
+#                   slit_l=0.1, slit_gamma=20.)
+slits = range(5)  # [2]
+r_slits = geomTJ2.plates_dict['an'].slits_edges
+rs = geomTJ2.r_dict['slit']
 # calculate normal to slit plane
-slit_plane_n = geomT15.slit_plane_n
+slit_plane_n = geomTJ2.plates_dict['an'].slit_plane_n
 
 # %%
 traj_list_copy = copy.deepcopy(traj_list_a3b3)
@@ -25,18 +27,19 @@ traj_list_copy = copy.deepcopy(traj_list_a3b3)
 
 # %%
 # set number of filaments in a beam
-d_beam = 0.02  # beam diameter [m]
-n_filaments_xy = 5  # number of filaments in xy plane (must be ODD)
+d_beam = 0.01  # beam diameter [m]
+n_filaments_xy = 3  # number of filaments in xy plane (must be ODD)
 skip_center_traj = True
 n_gamma = 4  # number of chords in beam cross-section
-foc_len = 50  # distance from the first point of the trajectory to the focus
+foc_len = 50.  # distance from the first point of the trajectory to the focus
 drad = np.pi/180.  # converts degrees to radians
 
 fat_beam_list = []
 
+t1 = time.time()
 for tr in traj_list_copy:
-    if tr.Ebeam == Ebeam and tr.U[0] == UA2:
-        print('\nEb = {}, UA2 = {}'.format(tr.Ebeam, tr.U[0]))
+    if tr.Ebeam == Ebeam and abs(tr.U['A2'] - UA2) < 0.1:
+        print('\nEb = {}, UA2 = {}'.format(tr.Ebeam, tr.U['A2']))
     else:
         continue
     r0 = tr.RV0[0, :3]
@@ -59,7 +62,7 @@ for tr in traj_list_copy:
         # for gamma in np.arange(np.pi/n_gamma, np.pi, np.pi/n_gamma):
         for gamma in np.arange(0, np.pi, np.pi/n_gamma):
             gamma = gamma/drad
-            print('gamma = ', gamma)
+            print('\n gamma = ', gamma)
             # rotate and translate r0 to beam starting point
             r_rot = hb.rotate(r, axis=(1, 0, 0), deg=gamma)
             r_rot = hb.rotate(r_rot, axis=(0, 0, 1), deg=tr.alpha)
@@ -71,13 +74,25 @@ for tr in traj_list_copy:
 
             tr_fat = copy.deepcopy(tr)
             tr_fat.RV0[0, :] = np.hstack([r_rot, v_rot])
-            # tr_fat.U = [0., 0., 0., 0.]
-            # tr_fat.pass_prim(E, B, geomT15, tmax=0.01)
-            tr_fat = hb.pass_to_slits(tr_fat, dt, E, B, geomT15,
-                                      timestep_divider=10)
+            tr_fat.pass_fan(geomTJ2.r_dict['aim'], E, B, geomTJ2,
+                            eps_xy=1e-3, eps_z=1,
+                            stop_plane_n=np.array([1., 0., 0.]),
+                            no_intersect=True, no_out_of_bounds=True)
+            tr_fat.pass_to_target(geomTJ2.r_dict['aim'], E, B, geomTJ2,
+                                  eps_xy=1e-3, eps_z=1,
+                                  stop_plane_n=np.array([1., 0., 0.]),
+                                  no_intersect=True, no_out_of_bounds=True)
+            # tr_fat = hb.pass_to_slits(tr_fat, dt, E, B, geomTJ2,
+            #                           timestep_divider=10)
+            tr_fat = hb.calc_zones(tr_fat, dt, E, B, geomTJ2, slits=slits,
+                                   timestep_divider=6,
+                                   eps_xy=1e-4, eps_z=1, dt_min=1e-13,
+                                   no_intersect=True, no_out_of_bounds=True)
             fat_beam_list.append(tr_fat)
             if abs(y) < 1e-6:
                 break
+t2 = time.time()
+print('t = {:.1f} s\n'.format(t2-t1))
 
 # %% save zones
 # dirname = 'output/' + 'B{}_I{}'.format(int(Btor), int(Ipl))
@@ -90,13 +105,13 @@ for tr in traj_list_copy:
 #     np.savetxt(fname, zone, fmt='%.4e')
 
 # %% plot fat beam
-hbplot.plot_fat_beam(fat_beam_list, geomT15, Btor, Ipl, n_slit='all')
-hbplot.plot_fat_beam(fat_beam_list, geomT15, Btor, Ipl, n_slit=2)
+hbplot.plot_fat_beam(fat_beam_list, geomTJ2, config, slits=range(5))
+hbplot.plot_fat_beam(fat_beam_list, geomTJ2, config, slits=slits)
 
 # %% plot SVs
-hbplot.plot_svs(fat_beam_list, geomT15, Btor, Ipl, n_slit='all',
+hbplot.plot_svs(fat_beam_list, geomTJ2, config, slits=range(5),
                 plot_prim=True, plot_sec=False, plot_zones=False,
                 plot_cut=False, alpha_xy=10, alpha_zy=20)
-hbplot.plot_svs(fat_beam_list, geomT15, Btor, Ipl, n_slit=2,
+hbplot.plot_svs(fat_beam_list, geomTJ2, config, slits=slits,
                 plot_prim=True, plot_sec=False, plot_zones=True,
                 plot_cut=False, alpha_xy=10, alpha_zy=20)

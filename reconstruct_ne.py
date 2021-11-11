@@ -90,14 +90,15 @@ def integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
         sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))
     else:
         # simple assumption for SOL
-        Te_loc = 0.04  # 0.
+        Te_loc = Te(1.0)  # 0.
         ne_loc = 1e19 * 1e-2  # 0.
         sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))  # 0.
 
     # calculate total value with integrals
     # SV size, ion zones should be calculated!
     # lam = np.linalg.norm(tr.ion_zones[2][0] - tr.ion_zones[2][-1])  # [m]
-    Itot = 2 * ne_loc * sigmaEff_loc * lam(r_loc) * math.exp(-I1-I2)  # relative to I0
+    # Itot relative to I0
+    Itot = 2 * ne_loc * sigmaEff_loc * lam(r_loc) * math.exp(-I1-I2)
 
     return np.array([tr.Ebeam, tr.U['A2'], r_loc, Itot, ne_loc, Te_loc,
                      lam(r_loc), sigmaEff_loc, I1, I2, L1, L2])
@@ -337,47 +338,48 @@ sigmaV23_p = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
 sigmaV23_p[:, 1] = sigmaV23_p[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
 # %% interpolate rates
-
+interp_type = 'quadratic'
+# interp_type = 'slinear'
 sigmaEff12_e_interp = interpolate.interp1d(sigmaV12_e[:, 0]/1e3,
                                            sigmaV12_e[:, 1]/v0,
-                                           kind='linear')  # Te in [keV]
+                                           kind=interp_type)  # Te in [keV]
 sigmaEff12_p_interp = interpolate.interp1d(sigmaV12_p[:, 0]/1e3,
                                            sigmaV12_p[:, 1]/v0,
-                                           kind='linear')  # Te in [keV]
+                                           kind=interp_type)  # Te in [keV]
 sigmaEff13_e_interp = interpolate.interp1d(sigmaV13_e[:, 0]/1e3,
                                            sigmaV13_e[:, 1]/v0,
-                                           kind='linear')  # Te in [keV]
+                                           kind=interp_type)  # Te in [keV]
 sigmaEff23_e_interp = interpolate.interp1d(sigmaV23_e[:, 0]/1e3,
                                            sigmaV23_e[:, 1]/v0,
-                                           kind='linear')  # Te in [keV]
+                                           kind=interp_type)  # Te in [keV]
 sigmaEff23_p_interp = interpolate.interp1d(sigmaV23_p[:, 0]/1e3,
                                            sigmaV23_p[:, 1]/v0,
-                                           kind='linear')  # Te in [keV]
+                                           kind=interp_type)  # Te in [keV]
 
 plt.figure()
 plt.semilogx(sigmaV12_e[:, 0], sigmaV12_e[:, 1]*1e6, 'o', color='k',
              label=r'$Cs^+$+e $\rightarrow$ $Cs^{2+}$+2e')
-Temp = np.linspace(min(sigmaV12_e[:, 0]), max(sigmaV12_e[:, 0]), num=1000)
+Temp = np.linspace(min(sigmaV12_e[:, 0]), max(sigmaV12_e[:, 0]), num=5000)
 plt.semilogx(Temp, sigmaEff12_e_interp(Temp/1e3)*1e6*v0, '-', color='k')
 
 plt.semilogx(sigmaV13_e[:, 0], sigmaV13_e[:, 1]*1e6, 'o', color='g',
              label=r'$Cs^+$+e $\rightarrow$ $Cs^{3+}$+3e')
-Temp = np.linspace(min(sigmaV13_e[:, 0]), max(sigmaV13_e[:, 0]), num=100)
+Temp = np.linspace(min(sigmaV13_e[:, 0]), max(sigmaV13_e[:, 0]), num=5000)
 plt.semilogx(Temp, sigmaEff13_e_interp(Temp/1e3)*1e6*v0, '-', color='g')
 
 plt.semilogx(sigmaV12_p[:, 0], sigmaV12_p[:, 1]*1e6, 'o', color='r',
              label=r'$Cs^+$+p $\rightarrow$ $Cs^{2+}$+p+e')
-Temp = np.linspace(min(sigmaV12_p[:, 0]), max(sigmaV12_p[:, 0]), num=100)
+Temp = np.linspace(min(sigmaV12_p[:, 0]), max(sigmaV12_p[:, 0]), num=5000)
 plt.semilogx(Temp, sigmaEff12_p_interp(Temp/1e3)*1e6*v0, '-', color='r')
 
 plt.semilogx(sigmaV23_e[:, 0], sigmaV23_e[:, 1]*1e6, '^', color='k',
              label=r'$Cs^{2+}$+e $\rightarrow$ $Cs^{3+}$+2e')
-Temp = np.linspace(min(sigmaV23_e[:, 0]), max(sigmaV23_e[:, 0]), num=100)
+Temp = np.linspace(min(sigmaV23_e[:, 0]), max(sigmaV23_e[:, 0]), num=5000)
 plt.semilogx(Temp, sigmaEff23_e_interp(Temp/1e3)*1e6*v0, '--', color='k')
 
 plt.semilogx(sigmaV23_p[:, 0], sigmaV23_p[:, 1]*1e6, 's', color='r',
              label=r'$Cs^{2+}$+p $\rightarrow$ $Cs^{3+}$+p+e')
-Temp = np.linspace(min(sigmaV23_p[:, 0]), max(sigmaV23_p[:, 0]), num=100)
+Temp = np.linspace(min(sigmaV23_p[:, 0]), max(sigmaV23_p[:, 0]), num=5000)
 plt.semilogx(Temp, sigmaEff23_p_interp(Temp/1e3)*1e6*v0, '--', color='r')
 
 plt.xlabel(r'$E_{e,p}$ (eV)')
@@ -414,17 +416,17 @@ Itot = np.delete(Itot, [2, 4, 6], axis=1)
 print('experimental Itot loaded ' + filename)
 
 neAvg = np.mean(Itot[:, 4])  # line averagend ne [e19 m-3]
-neAvg = 0.8  # 0.46  # 3.6
+neAvg = 0.77  # 0.46  # 3.6
 print('\n****** ne = {:.2f}\n'.format(neAvg))
 
-Iinj = 52e-6  # 100e-6  # injection beam current [A]
+Iinj = 45e-6  #52e-6  # 100e-6  # injection beam current [A]
 kAmpl = 1 * 1e7  # amplification coefficient
 
 # flag to optimize I0
 optimizeI0 = False
 
 # flag to optimize ne
-optimizeNe = True
+optimizeNe = False
 
 # flag to plot parameters vs rho
 addPlots = False

@@ -93,8 +93,8 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
 
     # %% make fitting of TS data
     # fitting of Te
-    rho_min = -0.5
-    rho_max = 0.3
+    rho_min = -0.6
+    rho_max = 0.1
     mask_Te = (Te[:, 0] > rho_min) & (Te[:, 0] < rho_max)
     Te_data = Te[mask_Te]
 
@@ -104,8 +104,10 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
 #    NeErr = NeErr[mask]
 
     # add boundary zeros
-    Te_data = np.vstack(([[-1, 0.04], [-0.8, 0.06]]*500, Te_data))
-    Te_data = np.vstack((Te_data, [[0.8, 0.06], [1, 0.04]]*500))
+    Te_data = np.vstack(([[-1, 0.04], [-0.8, 0.06]]*1000, Te_data))
+    Te_data = np.vstack((Te_data, [[0.8, 0.06], [1, 0.04]]*1000))
+    # Te_data = np.vstack(([[-1, 0.0]]*100, Te_data))
+    # Te_data = np.vstack((Te_data, [[1, 0.0]]*100))
 
     poptTe, pcovTe = optimize.curve_fit(TeFit, Te_data[:, 0], Te_data[:, 1],
                                         p0=coeffsTe0, maxfev=5000)

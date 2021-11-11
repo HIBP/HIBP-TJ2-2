@@ -54,7 +54,7 @@ class Traj():
         self.Ebeam = Ebeam
         # particle velocity:
         Vabs = np.sqrt(2 * Ebeam * 1.602176634E-16 / m)
-        V0 = calc_vector(Vabs, alpha, beta, direction=(-1, -1, 1))
+        V0 = calc_vector(Vabs, alpha, beta, direction=(-1., -1., 1.))
         self.alpha = alpha
         self.beta = beta
         self.U = U
@@ -140,7 +140,7 @@ class Traj():
         self.tag_prim = tag_column
 
     def pass_sec(self, RV0, r_aim, E_interp, B_interp, geom,
-                 stop_plane_n=np.array([1, 0, 0]), tmax=5e-5,
+                 stop_plane_n=np.array([1., 0., 0.]), tmax=5e-5,
                  eps_xy=1e-3, eps_z=1e-3):
         '''
         passing secondary trajectory from initial point RV0 to point r_aim
@@ -220,7 +220,7 @@ class Traj():
         self.tag_sec = tag_column
 
     def pass_fan(self, r_aim, E_interp, B_interp, geom,
-                 stop_plane_n=np.array([1, 0, 0]), eps_xy=1e-3, eps_z=1e-3,
+                 stop_plane_n=np.array([1., 0., 0]), eps_xy=1e-3, eps_z=1e-3,
                  no_intersect=False, no_out_of_bounds=False):
         '''
         passing fan from initial point self.RV0
@@ -257,7 +257,7 @@ class Traj():
         self.Fan = list_sec
 
     def pass_to_target(self, r_aim, E_interp, B_interp, geom,
-                       stop_plane_n=np.array([1, 0, 0]),
+                       stop_plane_n=np.array([1., 0., 0.]),
                        eps_xy=1e-3, eps_z=1e-3, dt_min=1e-10,
                        no_intersect=False, no_out_of_bounds=False):
         '''
@@ -780,7 +780,7 @@ def add_diafragm(geom, plts_name, diaf_name, diaf_width=0.1):
 
 # %%
 @numba.njit()
-def calc_vector(length, alpha, beta, direction=(1, 1, -1)):
+def calc_vector(length, alpha, beta, direction=(1., 1., -1.)):
     '''
     calculate vector based on its length and angles
     '''
@@ -966,7 +966,7 @@ def optimize_A3B3(tr, geom, UA3, UB3, dUA3, dUB3,
         stop_plane_n = geom.plates_dict['an'].det_plane_n
     elif target == 'A4':
         rs = geom.r_dict['A4']
-        stop_plane_n = calc_vector(1.0, 0., 0., direction=(1, 1, 1))
+        stop_plane_n = calc_vector(1.0, 0., 0., direction=(1., 1., 1.))
 
     tr.dt1 = dt
     tr.dt2 = dt
@@ -1094,7 +1094,7 @@ def optimize_A4(tr, geom, UA4, dUA4, E, B, dt, eps_alpha=0.1):
 
 # %%
 def calc_zones(tr, dt, E, B, geom, slits=[2], timestep_divider=5,
-               stop_plane_n=np.array([1, 0, 0]), eps_xy=1e-3, eps_z=1,
+               stop_plane_n=np.array([1., 0., 0.]), eps_xy=1e-3, eps_z=1,
                dt_min=1e-11, no_intersect=True, no_out_of_bounds=True):
     '''
     calculate ionization zones
@@ -1152,7 +1152,7 @@ def calc_zones(tr, dt, E, B, geom, slits=[2], timestep_divider=5,
         if not (True in tr.IntersectGeometrySec.values() or
                 tr.B_out_of_bounds) and contains_point:
             fan_list.append(tr.RV_sec)
-    tr.Fan = fan_list
+    # tr.Fan = fan_list
     tr.fan_to_slits = fan_list
     print('\nPrecise fan calculated')
 
@@ -1166,8 +1166,9 @@ def calc_zones(tr, dt, E, B, geom, slits=[2], timestep_divider=5,
         rv_list = []  # list for RV arrays of secondaries
         for edge in [upper_edge, lower_edge]:
             # find intersection of fan and slit edge
-            for i_tr in range(len(tr.Fan) - 1):
-                p1, p2 = tr.Fan[i_tr][-1, :3], tr.Fan[i_tr+1][-1, :3]
+            for i_tr in range(len(tr.fan_to_slits) - 1):
+                p1 = tr.fan_to_slits[i_tr][-1, :3]
+                p2 = tr.fan_to_slits[i_tr+1][-1, :3]
                 # check intersection between fan segment and slit edge
                 if is_intersect(p1, p2, edge[0], edge[1]):
                     r_intersect = segm_intersect(p1, p2, edge[0], edge[1])
@@ -1181,7 +1182,7 @@ def calc_zones(tr, dt, E, B, geom, slits=[2], timestep_divider=5,
                                       stop_plane_n=slit_plane_n,
                                       no_intersect=no_intersect,
                                       no_out_of_bounds=no_out_of_bounds)
-                    zones_list.append(tr.RV_sec[-1, :3])
+                    zones_list.append(tr.RV_sec[0, :3])
                     rv_list.append(tr.RV_sec)
                     print('ok!')
                     break
@@ -1405,11 +1406,11 @@ def is_between(A, B, C, eps=1e-6):
 
 @numba.njit()
 def order(A, B, C):
-        '''
-        if counterclockwise return True
-        if clockwise return False
-        '''
-        return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
+    '''
+    if counterclockwise return True
+    if clockwise return False
+    '''
+    return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
 
 
 @numba.njit()

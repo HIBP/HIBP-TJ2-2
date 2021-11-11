@@ -828,7 +828,8 @@ def plot_grid_a3b3(traj_list, geom, config,
 
 
 # %%
-def plot_traj_toslits(tr, geom, config, slits=[2], plot_fan=True):
+def plot_traj_toslits(traj_list, geom, config, Ebeam=132.,
+                      slits=[2], plot_fan=True):
     '''
     plot fan of trajectories which go to slits
     '''
@@ -838,8 +839,7 @@ def plot_traj_toslits(tr, geom, config, slits=[2], plot_fan=True):
     set_axes_param(ax1, 'X (m)', 'Y (m)')
     set_axes_param(ax2, 'X (m)', 'Z (m)')
     set_axes_param(ax3, 'Z (m)', 'Y (m)')
-    ax1.set_title('E={} keV, UA2={} kV, {}'
-                  .format(tr.Ebeam, tr.U['A2'], config))
+    ax1.set_title('E={} keV, {}'.format(Ebeam,  config))
 
     # plot geometry
     geom.plot(ax1, axes='XY', plot_aim=False, plot_analyzer=True)
@@ -853,39 +853,39 @@ def plot_traj_toslits(tr, geom, config, slits=[2], plot_fan=True):
     colors = colors[:n_slits]
     colors = cycle(colors)
 
-    # plot primary trajectory
-    tr.plot_prim(ax1, axes='XY', color='k', full_primary=True)
-    tr.plot_prim(ax2, axes='XZ', color='k', full_primary=True)
-    tr.plot_prim(ax3, axes='ZY', color='k', full_primary=True)
-
-    # plot precise fan of secondaries
-    if plot_fan:
-        for fan_tr in tr.fan_to_slits:
-            ax1.plot(fan_tr[:, 0], fan_tr[:, 1], color='tab:gray')
-            ax2.plot(fan_tr[:, 0], fan_tr[:, 2], color='tab:gray')
-            ax3.plot(fan_tr[:, 2], fan_tr[:, 1], color='tab:gray')
-
-    # plot secondaries
-    for i_slit in slits:
-        c = next(colors)
-        for fan_tr in tr.RV_sec_toslits[i_slit]:
-            ax1.plot(fan_tr[:, 0], fan_tr[:, 1], color=c)
-            ax2.plot(fan_tr[:, 0], fan_tr[:, 2], color=c)
-            ax3.plot(fan_tr[:, 2], fan_tr[:, 1], color=c)
-
-    # plot zones
-    for i_slit in slits:
-        c = next(colors)
-        for fan_tr in tr.RV_sec_toslits[i_slit]:
-            ax1.plot(fan_tr[0, 0], fan_tr[0, 1], 'o', color=c,
-                     markerfacecolor='white')
-            ax3.plot(fan_tr[0, 2], fan_tr[0, 1], 'o', color=c,
-                     markerfacecolor='white')
+    for tr in traj_list:
+        if abs(tr.Ebeam - Ebeam) > 0.1:
+            continue
+        # plot primary trajectory
+        tr.plot_prim(ax1, axes='XY', color='k', full_primary=True)
+        tr.plot_prim(ax2, axes='XZ', color='k', full_primary=True)
+        tr.plot_prim(ax3, axes='ZY', color='k', full_primary=True)
+        # plot precise fan of secondaries
+        if plot_fan:
+            for fan_tr in tr.fan_to_slits:
+                ax1.plot(fan_tr[:, 0], fan_tr[:, 1], color='tab:gray')
+                ax2.plot(fan_tr[:, 0], fan_tr[:, 2], color='tab:gray')
+                ax3.plot(fan_tr[:, 2], fan_tr[:, 1], color='tab:gray')
+        # plot secondaries
+        for i_slit in slits:
+            c = next(colors)
+            for fan_tr in tr.RV_sec_toslits[i_slit]:
+                ax1.plot(fan_tr[:, 0], fan_tr[:, 1], color=c)
+                ax2.plot(fan_tr[:, 0], fan_tr[:, 2], color=c)
+                ax3.plot(fan_tr[:, 2], fan_tr[:, 1], color=c)
+        # plot zones
+        for i_slit in slits:
+            c = next(colors)
+            for fan_tr in tr.RV_sec_toslits[i_slit]:
+                ax1.plot(fan_tr[0, 0], fan_tr[0, 1], 'o', color=c,
+                         markerfacecolor='white')
+                ax3.plot(fan_tr[0, 2], fan_tr[0, 1], 'o', color=c,
+                         markerfacecolor='white')
     plt.show()
 
 
 # %%
-def plot_fat_beam(fat_beam_list, geom, config, n_slit='all', scale=3):
+def plot_fat_beam(fat_beam_list, geom, config, slits=[2], scale=3):
 
     # fig, (ax1, ax3) = plt.subplots(nrows=1, ncols=2)
     fig, axs = plt.subplots(2, 2, sharex='col', #sharey='row',
@@ -905,16 +905,11 @@ def plot_fat_beam(fat_beam_list, geom, config, n_slit='all', scale=3):
     geom.plot(ax3, axes='ZY', plot_aim=False, plot_analyzer=True)
 
     # get number of slits
-    n_slits = geom.slits_edges.shape[0]
+    n_slits = geom.plates_dict['an'].slits_edges.shape[0]
     # set color cycler
     prop_cycle = plt.rcParams['axes.prop_cycle']
     colors = prop_cycle.by_key()['color']
     colors = colors[:n_slits]
-
-    if n_slit == 'all':
-        slits = range(n_slits)
-    else:
-        slits = [n_slit]
 
     # plot trajectories
     for tr in fat_beam_list:
@@ -933,6 +928,8 @@ def plot_fat_beam(fat_beam_list, geom, config, n_slit='all', scale=3):
         # plot secondaries
         for i in slits:
             c = colors[i]
+            if tr.RV_sec_toslits[i] == None or len(tr.RV_sec_toslits[i]) == 0:
+                continue
             for fan_tr in tr.RV_sec_toslits[i]:
                 ax1.plot(fan_tr[:, 0], fan_tr[:, 1], color=c)
                 ax2.plot(fan_tr[:, 0], fan_tr[:, 2], color=c)
@@ -949,7 +946,7 @@ def plot_fat_beam(fat_beam_list, geom, config, n_slit='all', scale=3):
 
 
 # %%
-def plot_svs(fat_beam_list, geom, config, n_slit='all',
+def plot_svs(fat_beam_list, geom, config, slits=[2],
              plot_prim=True, plot_sec=False, plot_zones=True, plot_cut=False,
              plot_sep=True, alpha_xy=10, alpha_zy=20):
     '''
@@ -969,7 +966,7 @@ def plot_svs(fat_beam_list, geom, config, n_slit='all',
     geom.plot(ax3, axes='ZY', plot_aim=False, plot_analyzer=True)
 
     # get number of slits
-    n_slits = geom.slits_edges.shape[0]
+    n_slits = geom.plates_dict['an'].slits_edges.shape[0]
     # set color cycler
     prop_cycle = plt.rcParams['axes.prop_cycle']
     colors = prop_cycle.by_key()['color']
@@ -989,11 +986,6 @@ def plot_svs(fat_beam_list, geom, config, n_slit='all',
                     ax1.plot(fan_tr[:, 0], fan_tr[:, 1], color=c)
                     ax3.plot(fan_tr[:, 2], fan_tr[:, 1], color=c)
 
-    if n_slit == 'all':
-        slits = reversed(range(n_slits))
-    else:
-        slits = [n_slit]
-
     # plot sample volumes
     for i in slits:
         c = colors[i]
@@ -1002,7 +994,7 @@ def plot_svs(fat_beam_list, geom, config, n_slit='all',
         coords_last = np.empty([0, 3])
         for tr in fat_beam_list:
             # skip empty arrays
-            if tr.ion_zones[i].shape[0] == 0:
+            if tr.ion_zones[i] is None:
                 continue
             coords_first = np.vstack([coords_first, tr.ion_zones[i][0, 0:3]])
             coords_last = np.vstack([coords_last, tr.ion_zones[i][-1, 0:3]])
