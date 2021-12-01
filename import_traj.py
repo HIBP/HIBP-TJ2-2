@@ -10,7 +10,7 @@ import copy
 
 # %% import trajectory lists
 config = '100_44_64'
-alpha, beta = 73.3, -11.7
+alpha, beta = 74.8, -11.7
 x, y, z = 270, -45, -17
 
 traj_list = []
@@ -41,12 +41,20 @@ traj_list = []
 #           'E172-176_UA2-9-3_alpha73_beta-12_x270y-40z-17.pkl']
 
 
-# # apr 2019
-names = [f'E100-108_UA2-6-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
-         f'E112-120_UA2-7-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
-         f'E124-132_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
-         f'E136-144_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
-         f'E148-150_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl']
+# # # apr 2019
+# names = [f'E100-108_UA2-6-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+#          f'E112-120_UA2-7-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+#          f'E124-132_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+#          f'E136-144_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+#          f'E148-150_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl']
+
+# # 11 nov 2021
+names = [f'E108-116_UA2-5-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E120-128_UA2-6-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E132-140_UA2-7-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E144-152_UA2-8-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E156-164_UA2-8-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E168-172_UA2-8-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',]
 
 for name in names:
     traj_list += hb.read_traj_list(name, dirname='output/'+config)

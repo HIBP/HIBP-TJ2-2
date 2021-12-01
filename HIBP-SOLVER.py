@@ -30,14 +30,14 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # beam energy
-Emin, Emax, dEbeam = 132., 132., 2.  # 144.
+Emin, Emax, dEbeam = 168., 172., 4.  # 144.
 
 # set flags
 optimizeB2 = False
 optimizeA3B3 = False
-calculate_zones = True
+calculate_zones = False
 pass2AN = False
-save_radref = False
+save_radref = True
 
 # A1 and B1 plates voltages
 UA1, UB1 = 0.1, 0.75  # [kV]
@@ -146,7 +146,8 @@ for Ebeam in Ebeam_range:
     #     shot = '50497'
 
     # shot = '49873'
-    shot = '48431'
+    # shot = '48431'
+    shot = '52486'
 
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
     print('\n>>INPUT FILE: ', input_fname)
@@ -220,6 +221,7 @@ traj_list_passed = copy.deepcopy(traj_list_B2)
 
 # %% Save traj list
 hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
+
 # sys.exit()
 
 # %% Additional plots
@@ -313,9 +315,9 @@ hbplot.plot_scan(traj_list_a3b3, geomTJ2, Ebeam, config,
                  full_primary=False, plot_analyzer=True,
                  plot_det_line=True, subplots_vertical=True, scale=4)
 
-hbplot.plot_scan(traj_list_an, geomTJ2, Ebeam, config,
-                 full_primary=False, plot_analyzer=True,
-                 plot_det_line=True, subplots_vertical=True, scale=4)
+# hbplot.plot_scan(traj_list_an, geomTJ2, Ebeam, config,
+#                  full_primary=False, plot_analyzer=True,
+#                  plot_det_line=True, subplots_vertical=True, scale=4)
 
 # %% Pass trajectory to the Analyzer and find A4 voltage
 #     print('\n Optimizing entrance angle to Analyzer with A4')
