@@ -73,19 +73,34 @@ def define_geometry(config, analyzer=1):
     geom.add_coords('r0', 'A1', dist_r0, geom.angles_dict['r0'])
 
     # AIM position (BEFORE the Secondary beamline) [m]
-    # coordinates of the output port
-    xport_out = 1.9012  # 2.408  # 1.9
-    yport_out = -0.456
-    zport_out = 0.046  # -0.116  # 0.0
-    geom.r_dict['port_out'] = np.array([xport_out, yport_out, zport_out])
+    if analyzer == 1:
+        # LINE A
+        # coordinates of the output port
+        xport_out = 1.9012  # 2.408  # 1.9
+        yport_out = -0.456
+        zport_out = 0.046  # -0.116  # 0.0
+        # alpha and beta angles of the SECONDARY beamline [deg]
+        alpha_sec = 0.
+        beta_sec = 15.5
+        gamma_sec = 20.  # 17.
+        A3_angles = np.array([alpha_sec, beta_sec, gamma_sec+180.])
+    elif analyzer == 2:
+        # LINE B   COORDINATES MUST BE DEFINED
+        # coordinates of the output port
+        xport_out = 1.9012  # 2.408  # 1.9
+        yport_out = -0.456
+        zport_out = 0.046  # -0.116  # 0.0
+        # alpha and beta angles of the SECONDARY beamline [deg]
+        alpha_sec = 0.
+        beta_sec = 15.5
+        gamma_sec = 20.  # 17.
+        # in the second line U_upper_plate=0
+        A3_angles = np.array([alpha_sec, beta_sec, gamma_sec+180.])
 
     # SECONDARY beamline geometry
-    # alpha and beta angles of the SECONDARY beamline [deg]
-    alpha_sec = 0.
-    beta_sec = 15.5
-    gamma_sec = 20.  # 17.
+    geom.r_dict['port_out'] = np.array([xport_out, yport_out, zport_out])
     sec_angles = {'aim': np.array([alpha_sec, beta_sec, gamma_sec]),
-                  'A3': np.array([alpha_sec, beta_sec, gamma_sec]),
+                  'A3': A3_angles,
                   'B3': np.array([alpha_sec, 4.84, gamma_sec]),
                   'A4': np.array([0.11, 3.95, 26.16]),
                   'B4': np.array([0.11, 3.95, 26.16]),
