@@ -146,7 +146,8 @@ for Ebeam in Ebeam_range:
     #     shot = '50497'
 
     # shot = '49873'
-    shot = '48431'
+    # shot = '48431'
+    shot = '52486'
 
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
     print('\n>>INPUT FILE: ', input_fname)
@@ -233,7 +234,7 @@ hbplot.plot_scan(traj_list_passed, geomTJ2, Ebeam, config,
                  plot_det_line=True, subplots_vertical=True, scale=5)
 # hbplot.plot_sec_angles(traj_list_passed, config, Ebeam='all')
 
-sys.exit()
+# sys.exit()
 
 # %% Optimize Secondary Beamline
 t1 = time.time()
@@ -269,10 +270,10 @@ else:
     print('\n Secondary beamline calculated, t = {:.1f} s\n'.format(t2-t1))
 
 # %% Calculate ionization zones
+traj_list_zones = []
 if calculate_zones:
     t1 = time.time()
     slits = [2]
-    traj_list_zones = []
     print('\n Ionization zones calculation')
     for tr in copy.deepcopy(traj_list_a3b3):
         print('\nEb = {}, UA2 = {:.2f}'.format(tr.Ebeam, tr.U['A2']))
@@ -289,6 +290,7 @@ if calculate_zones:
                              slits=slits, plot_fan=False)
 
 # %% Pass to ANALYZER
+traj_list_an = []
 if pass2AN:
     print('\n Passing to ANALYZER {}'.format(analyzer))
     # define list of trajectories that hit detector

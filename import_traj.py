@@ -32,21 +32,20 @@ traj_list = []
 #           'E156-168_UA2-9-3_alpha72.8_beta-11.7_x270y-45z-17.pkl',
 #           'E172-176_UA2-9-3_alpha72.8_beta-11.7_x270y-45z-17.pkl']
 
-# # mar 2020 5 cm up
-# names = ['E92-104_UA2-5-3_alpha73_beta-12_x270y-40z-17.pkl',
-#           'E108-120_UA2-6-3_alpha73_beta-12_x270y-40z-17.pkl',
-#           'E124-136_UA2-8-3_alpha73_beta-12_x270y-40z-17.pkl',
-#           'E140-152_UA2-9-3_alpha73_beta-12_x270y-40z-17.pkl',
-#           'E156-168_UA2-9-3_alpha73_beta-12_x270y-40z-17.pkl',
-#           'E172-176_UA2-9-3_alpha73_beta-12_x270y-40z-17.pkl']
-
-
 # # apr 2019
-names = [f'E100-108_UA2-6-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
-         f'E112-120_UA2-7-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
-         f'E124-132_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
-         f'E136-144_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
-         f'E148-150_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl']
+# names = [f'E100-108_UA2-6-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+#          f'E112-120_UA2-7-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+#          f'E124-132_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+#          f'E136-144_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+#          f'E148-150_UA2-8-2_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl']
+
+# # 11 nov 2021
+names = [f'E108-116_UA2-5-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E120-128_UA2-6-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E132-140_UA2-7-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E144-152_UA2-8-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E156-164_UA2-8-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',
+         f'E168-172_UA2-8-3_alpha{alpha:.1f}_beta{beta:.1f}_x{x:.0f}y{y:.0f}z{z:.0f}.pkl',]
 
 for name in names:
     traj_list += hb.read_traj_list(name, dirname='output/'+config)

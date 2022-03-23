@@ -23,13 +23,23 @@ import numba
 #     k = neAvg/(0.5*integrate.simps(NeShapeFunc(r, *coeffs), r))
 #     return k*NeShapeFunc(rho, *coeffs)
 
+def beam_prof(rho, rho_beam=0.0, drho=0.001):
+    '''
+    function determines beam profile
+    FWHM = 2.355*drho
+    '''
+    return np.exp(-(rho - rho_beam)**2 / (2*drho**2)) / (drho * np.sqrt(2*np.pi))
+
 
 def lam(r):
+    '''
+    size of the sample volume along the trajectory
+    '''
     return 0.004
 
 
 def integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
-                   sigmaEff12, sigmaEff13, sigmaEff23):
+                   sigmaEff12, sigmaEff13, sigmaEff23, drho=0.001):
     '''
     ne0, Te0 - central values
     sigmaV - interpolant over Te
@@ -97,6 +107,15 @@ def integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
     # calculate total value with integrals
     # SV size, ion zones should be calculated!
     # lam = np.linalg.norm(tr.ion_zones[2][0] - tr.ion_zones[2][-1])  # [m]
+
+    # make a convolution with beam profile
+    rho_vals = np.linspace(r_loc-0.2, r_loc+0.2, 1000)
+    beam = beam_prof(rho_vals, rho_beam=r_loc, drho=drho)
+    ne_loc = 1e19 * integrate.simps(beam * ne((rho_vals, neAvg), *coeffs),
+                                    rho_vals)
+    # rho_vals = np.linspace(r_loc-drho*2.355/2, r_loc+drho*2.355/2, 100)
+    # ne_loc = 1e19 * np.mean(ne((rho_vals, neAvg), *coeffs))
+
     # Itot relative to I0
     Itot = 2 * ne_loc * sigmaEff_loc * lam(r_loc) * math.exp(-I1-I2)
 
@@ -124,8 +143,8 @@ def rho_sign(rho, Ua2):
 
 # %%
 def integrate_scan(coeffs, Iinj, traj_list, lam, get_rho, ne, Te,
-                   sigmaEff12, sigmaEff13, sigmaEff23):
-    ''' function calculates beam on the detector during scan
+                   sigmaEff12, sigmaEff13, sigmaEff23, drho=0.001):
+    ''' function calculates beam current on the detector during scan
     assuming ne distribution with coeffs
     '''
     # array to contain:
@@ -138,7 +157,7 @@ def integrate_scan(coeffs, Iinj, traj_list, lam, get_rho, ne, Te,
     for i in range(Ntraj):
         tr = traj_list[i]
         Ibeam[i, :] = integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
-                                     sigmaEff12, sigmaEff13, sigmaEff23)
+                                     sigmaEff12, sigmaEff13, sigmaEff23, drho)
 
     Ibeam[:, 3] = Iinj*Ibeam[:, 3]
     Ibeam[:, 2] = rho_sign(Ibeam[:, 2], Ibeam[:, 1])
@@ -151,7 +170,7 @@ def discrepancy(coeffs, Iinj, traj_list, lam, get_rho, ne,
                 Itot_interp, Te_interp,
                 sigmaEff12_interp, sigmaEff13_interp,
                 sigmaEff23_interp, integrate_scan, discr_type=0):
-    ''' function reprents the difference between calculated current
+    ''' function returns the difference between calculated current
     and experimental values
     '''
     print('discr type ', discr_type)
@@ -181,8 +200,10 @@ def discrepancy_I0(Iinj, coeffs, traj_list, lam, get_rho, ne,
                    Itot_interp, Te_interp,
                    sigmaEff12_interp, sigmaEff13_interp,
                    sigmaEff23_interp, integrate_scan, discr_type=0):
-    ''' function reprents the difference between calculated current
+    ''' function returns the difference between calculated current
     and experimental values
+    the first argument is Iinj, so this function can be used
+    to optimize Iinj value
     '''
     print('discr type ', discr_type)
     I_calculated = integrate_scan(coeffs, Iinj*1e-6, traj_list, lam, get_rho,
@@ -211,6 +232,7 @@ def discrepancy_I0(Iinj, coeffs, traj_list, lam, get_rho, ne,
 def ne_NoAtten(Iinj, Itot_interp, traj_list, lam, get_rho, Te,
                NeShapeFunc, NeFit, neAvg, sigmaEff12):
     '''functions returns Ne(rho) and coeffsNe for ne=Itot/(2*Iinj*sigma*lam)
+    zero beam attenuation
     '''
     ne = np.zeros([0, 4])  # [0]Ebeam [1]ne [2]A2 [3]rho
     # loop for trajectories
@@ -298,7 +320,7 @@ def dSigmaEff(vtarget, Ttarget, m_target, sigma, vbeam, m_beam):
 
 
 # %%
-plt.close('all')
+plt.close('all')  # close all open figures
 
 # %%
 kB = 1.38064852e-23  # Boltzman [J/K]
@@ -313,27 +335,27 @@ rho = np.arange(-1, 1.01, 0.01)
 # %% LOAD IONIZATION RATES
 
 # <sigma*v> for Cs+ + e -> Cs2+ from Shevelko
-filename = 'D:\\Philipp\\Cross_sections\\Cs\\rateCs+_e_Cs2+.txt'
+filename = 'D:\\NRCKI\\Cross_sections\\Cs\\rateCs+_e_Cs2+.txt'
 sigmaV12_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
 sigmaV12_e[:, 1] = sigmaV12_e[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
 # <sigma*v> for Cs+ + e -> Cs3+ from Shevelko
-filename = 'D:\\Philipp\\Cross_sections\\Cs\\rateCs+_e_Cs3+.txt'
+filename = 'D:\\NRCKI\\Cross_sections\\Cs\\rateCs+_e_Cs3+.txt'
 sigmaV13_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
 sigmaV13_e[:, 1] = sigmaV13_e[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
 # <sigma*v> for Cs+ + p -> Cs2+ from Shevelko
-filename = 'D:\\Philipp\\Cross_sections\\Cs\\rateCs+_p_Cs2+.txt'
+filename = 'D:\\NRCKI\\Cross_sections\\Cs\\rateCs+_p_Cs2+.txt'
 sigmaV12_p = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
 sigmaV12_p[:, 1] = sigmaV12_p[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
 # <sigma*v> for Cs2+ + e -> Cs3+ from Shevelko
-filename = 'D:\\Philipp\\Cross_sections\\Cs\\rateCs2+_e_Cs3+.txt'
+filename = 'D:\\NRCKI\\Cross_sections\\Cs\\rateCs2+_e_Cs3+.txt'
 sigmaV23_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
 sigmaV23_e[:, 1] = sigmaV23_e[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
 # <sigma*v> for Cs2+ + p -> Cs3+ from Shevelko
-filename = 'D:\\Philipp\\Cross_sections\\Cs\\rateCs2+_p_Cs3+.txt'
+filename = 'D:\\NRCKI\\Cross_sections\\Cs\\rateCs2+_p_Cs3+.txt'
 sigmaV23_p = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
 sigmaV23_p[:, 1] = sigmaV23_p[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
@@ -356,6 +378,7 @@ sigmaEff23_p_interp = interpolate.interp1d(sigmaV23_p[:, 0]/1e3,
                                            sigmaV23_p[:, 1]/v0,
                                            kind=interp_type)  # Te in [keV]
 
+# plot rates
 plt.figure()
 plt.semilogx(sigmaV12_e[:, 0], sigmaV12_e[:, 1]*1e6, 'o', color='k',
              label=r'$Cs^+$+e $\rightarrow$ $Cs^{2+}$+2e')
@@ -397,7 +420,13 @@ plt.show()
 # %% import trajectories
 fname = 'E132-132_UA2-7-3_alpha74.1_beta-11.7_x270y-45z-17.pkl'
 # fname = 'E144-144_UA2-8-2_alpha74.1_beta-11.7_x270y-45z-17.pkl'
-traj_list = hb.read_traj_list(fname, dirname='output//100_44_64')
+traj_list_loaded = hb.read_traj_list(fname, dirname='output//100_44_64')
+# select beam energy
+Eb = 132.
+traj_list = []
+for tr in traj_list_loaded:
+    if tr.Ebeam == Eb:
+        traj_list.append(tr)
 
 print('list of trajectories loaded ' + fname)
 
@@ -408,19 +437,21 @@ print('list of trajectories loaded ' + fname)
 # rho_Ua2 should be generated in import_ro_config.py
 shot = 48431  # 48435  # 47152 #44162 #44543 #47152 #48431 #44584
 # file should contain t, Itot, A2, rho, Densidad2_
-filename = 'D:\\Philipp\\TJ-II_programs\\Itot\\' + str(shot) + '.dat'  # + '_ne04.dat'
+filename = 'D:\\NRCKI\\TJ-II_programs\\Itot\\' + str(shot) + '.dat'  # + '_ne04.dat'
 # filename = 'D:\\Philipp\\TJ-II_programs\\Itot\\' + str(shot) + '_ne04.dat'
 Itot = np.loadtxt(filename)
 # [0] time, [1] Itot, [2] Alpha2, [3] rho, [4] Densidad2_
 Itot = np.delete(Itot, [2, 4, 6], axis=1)
 print('experimental Itot loaded ' + filename)
 
-neAvg = np.mean(Itot[:, 4])  # line averagend ne [e19 m-3]
-neAvg = 0.77  # 0.46  # 3.6
+# set line averaged ne
+neAvg = np.mean(Itot[:, 4])  # line averagend ne [e19 m-3] from experiment
+# neAvg = 0.77  # 0.46  # 3.6
 print('\n****** ne = {:.2f}\n'.format(neAvg))
 
+# set beam current
 Iinj = 45e-6  #52e-6  # 100e-6  # injection beam current [A]
-kAmpl = 1 * 1e7  # amplification coefficient
+kAmpl = 2 * 1e7  # amplification coefficient HIBP-2 line A
 
 # flag to optimize I0
 optimizeI0 = False
@@ -453,6 +484,13 @@ Te_interp = interpolate.interp1d(rho, TeFit(rho, *coeffsTe))
 # ne_from_Itot, coeffsNe = ne_NoAtten(Iinj, Itot_interp, tr, lam_interp,
 #                                     Te_interp, NeShapeFunc, NeFit, neAvg,
 #                                     sigmaEff12_interp_e)
+
+# %% Load interpolator for rho
+if 'rho_interp' not in locals():
+    dirname = 'tj2lib'
+    config = '100_44_64'
+    B, rho_interp = hb.read_B(config, dirname=dirname, interp=True,
+                              coeff=0.96/1.0496)
 
 # %%
 # find the best fitting Iinj
