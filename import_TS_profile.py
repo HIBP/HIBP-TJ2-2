@@ -67,19 +67,19 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
     ''' TeFit and NeFit are functions for Ne and Te fitting
     '''
     # import Te
-    filename = 'E:\\cache\\Thomson.2\\PerfilTe_' + str(shot) + '_' + \
+    filename = 'D:\\cache\\Thomson.2\\PerfilTe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     Te = np.loadtxt(filename)  # [0]rho [1]Te
     # import Te errors
-    filename = 'E:\\cache\\Thomson.2\\PerfildTe_' + str(shot) + '_' + \
+    filename = 'D:\\cache\\Thomson.2\\PerfildTe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     TeErr = np.loadtxt(filename)  # [0]rho [1]TeErr
     # import Ne
-    filename = 'E:\\cache\\Thomson.2\\PerfilNe_' + str(shot) + '_' + \
+    filename = 'D:\\cache\\Thomson.2\\PerfilNe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     Ne = np.loadtxt(filename)  # [0]rho [1]Ne
     # import Ne errors
-    filename = 'E:\\cache\\Thomson.2\\PerfildNe_' + str(shot) + '_' + \
+    filename = 'D:\\cache\\Thomson.2\\PerfildNe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     NeErr = np.loadtxt(filename)  # [0]rho [1]NeErr
 

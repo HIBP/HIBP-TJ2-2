@@ -10,7 +10,7 @@ import copy
 
 # %% import trajectory lists
 config = '100_44_64'
-alpha, beta = 73.3, -11.7
+alpha, beta = 74.8, -11.7
 x, y, z = 270, -45, -17
 
 traj_list = []
