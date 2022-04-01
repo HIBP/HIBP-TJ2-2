@@ -32,7 +32,7 @@ def define_geometry(config, analyzer=1):
 
     # PRIMARY beamline geometry
     # alpha and beta angles of the PRIMARY beamline [deg]
-    dalpha = 1.5  # 0.75  # 1.0  # 0.5  # -0.5  # 0.0
+    dalpha = 1.0  #-0.5  # 1.5  # 0.75  # 1.0  # 0.5  # 0.0
     dbeta = 0.0
     alpha_prim = 73.303 + dalpha  # 73.381
     beta_prim = -11.721 + dbeta  # -11.856

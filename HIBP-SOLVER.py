@@ -30,7 +30,7 @@ q = 1.602176634e-19  # electron charge [Co]
 m_ion = 132.905 * 1.6605e-27  # Cs ion mass [kg]
 
 # beam energy
-Emin, Emax, dEbeam = 168., 172., 4.  # 144.
+Emin, Emax, dEbeam = 132., 132., 4.  # 144.
 
 # set flags
 optimizeB2 = False
@@ -40,7 +40,7 @@ pass2AN = False
 save_radref = True
 
 # A1 and B1 plates voltages
-UA1, UB1 = 0.1, 0.75  # [kV]
+UA1, UB1 = 0.0, 0.75  # [kV]
 
 # UA2 voltages
 UA2min, UA2max, dUA2 = -9., 5., 2.
@@ -147,7 +147,10 @@ for Ebeam in Ebeam_range:
 
     # shot = '49873'
     # shot = '48431'
-    shot = '52486'
+    # shot = '52486'
+    # shot = '50489'
+    # shot = '50184'
+    shot = '52686'
 
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
     print('\n>>INPUT FILE: ', input_fname)
@@ -350,4 +353,4 @@ if save_radref:
         hb.save_radref(traj_list_passed, Ebeam, rho_interp)
 
 # %% Save list of trajectories
-# hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])
+hb.save_traj_list(traj_list_passed, config, geomTJ2.r_dict[target])

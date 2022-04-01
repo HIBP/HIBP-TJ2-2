@@ -6,7 +6,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from scipy import integrate, signal, optimize, interpolate
-from import_TS_profile import TeFit, NeShapeFunc, NeFit, ImportTS
+from import_TS_profile import TeFit, NeShapeFunc, NeFit, ImportTS, normalize_Ne
 import time
 import hibplib as hb
 import hibpplotlib as hbplot
@@ -14,15 +14,6 @@ import numba
 
 
 # %%
-# def ne_rec(rho, p1, p2, p3):
-#     '''
-#     ne fit using chord-averaged value neAvg
-#     '''
-#     coeffs = [p1, p2, p3]
-#     r = np.arange(-1, 1.01, 0.01)
-#     k = neAvg/(0.5*integrate.simps(NeShapeFunc(r, *coeffs), r))
-#     return k*NeShapeFunc(rho, *coeffs)
-
 def beam_prof(rho, rho_beam=0.0, drho=0.001):
     '''
     function determines beam profile
@@ -38,22 +29,14 @@ def lam(r):
     return 0.004
 
 
-def integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
+def integrate_traj(tr, lam, get_rho, ne, neAvg, coeffs, Te,
                    sigmaEff12, sigmaEff13, sigmaEff23, drho=0.001):
     '''
     ne0, Te0 - central values
     sigmaV - interpolant over Te
     returns ne(rho)*(sigma_V(rho)/v0)*lam*exp(-integral_prim-integral_sec)
     '''
-    # # first of all add the first point of secondary traj to the primary traj
-    # # find the distances
-    # distances = np.array([np.linalg.norm(tr.RV_prim[i, :3] - tr.RV_sec[0, :3])
-    #                       for i in range(tr.RV_prim.shape[0])])
-    # sorted_indices = np.argsort(distances)
-    # # find position where to insert the new point
-    # index_to_insert = max(sorted_indices[0:2])
-    # tr.RV_prim = np.insert(tr.RV_prim, index_to_insert,
-    #                        tr.RV_sec[0, :], axis=0)
+    # find index of the SV point in the primary trajecotry
     distances = np.array([np.linalg.norm(tr.RV_prim[i, :3] - tr.RV_sec[0, :3])
                           for i in range(tr.RV_prim.shape[0])])
     index_stop = np.argwhere(distances < 1e-5)[0, 0]
@@ -68,10 +51,10 @@ def integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
 
         rho1 = get_rho(r1)[0]
         rho2 = get_rho(r2)[0]
+        r_loc = (rho1 + rho2) / 2
 
-        if (rho1 <= 1.0) and (rho2 <= 1.0):
+        if r_loc <= 1.0:
             dl = np.linalg.norm(r1 - r2)
-            r_loc = (rho1 + rho2) / 2
             ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
             Te_loc = Te(r_loc)
             I1 += dl * (sigmaEff12(Te_loc) + sigmaEff13(Te_loc)) * ne_loc
@@ -84,25 +67,30 @@ def integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
 
         rho1 = get_rho(r1)[0]
         rho2 = get_rho(r2)[0]
+        r_loc = (rho1 + rho2) / 2
 
-        if (rho1 <= 1.0) and (rho2 <= 1.0):
+        if r_loc <= 1.0:
             dl = np.linalg.norm(r1 - r2)
-            r_loc = (rho1 + rho2) / 2
             ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
             Te_loc = Te(r_loc)
             I2 += dl * sigmaEff23(Te_loc) * ne_loc
             L2 += dl
 
     r_loc = get_rho(tr.RV_sec[0, :3])[0]
-    if r_loc <= 0.99:
-        Te_loc = Te(r_loc)
-        ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
-        sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))
-    else:
-        # simple assumption for SOL
-        Te_loc = Te(1.0)  # 0.
-        ne_loc = 1e19 * 1e-2  # 0.
-        sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))  # 0.
+    Te_loc = Te(r_loc)
+    ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
+    sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))
+
+    # USE IF TE/NE NOT DEFINED BEYOND RHO=1.0
+    # if r_loc <= 0.99:
+    #     Te_loc = Te(r_loc)
+    #     ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
+    #     sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))
+    # else:
+    #     # simple assumption for SOL
+    #     Te_loc = Te(1.0)  # 0.
+    #     ne_loc = 1e19 * 1e-2  # 0.
+    #     sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))  # 0.
 
     # calculate total value with integrals
     # SV size, ion zones should be calculated!
@@ -142,7 +130,7 @@ def rho_sign(rho, Ua2):
 
 
 # %%
-def integrate_scan(coeffs, Iinj, traj_list, lam, get_rho, ne, Te,
+def integrate_scan(coeffs, Iinj, traj_list, lam, get_rho, ne, neAvg, Te,
                    sigmaEff12, sigmaEff13, sigmaEff23, drho=0.001):
     ''' function calculates beam current on the detector during scan
     assuming ne distribution with coeffs
@@ -156,7 +144,7 @@ def integrate_scan(coeffs, Iinj, traj_list, lam, get_rho, ne, Te,
     # loop for trajectories
     for i in range(Ntraj):
         tr = traj_list[i]
-        Ibeam[i, :] = integrate_traj(tr, lam, get_rho, ne, coeffs, Te,
+        Ibeam[i, :] = integrate_traj(tr, lam, get_rho, ne, neAvg, coeffs, Te,
                                      sigmaEff12, sigmaEff13, sigmaEff23, drho)
 
     Ibeam[:, 3] = Iinj*Ibeam[:, 3]
@@ -166,7 +154,7 @@ def integrate_scan(coeffs, Iinj, traj_list, lam, get_rho, ne, Te,
 
 
 # %%
-def discrepancy(coeffs, Iinj, traj_list, lam, get_rho, ne,
+def discrepancy(coeffs, Iinj, traj_list, lam, get_rho, ne, neAvg,
                 Itot_interp, Te_interp,
                 sigmaEff12_interp, sigmaEff13_interp,
                 sigmaEff23_interp, integrate_scan, discr_type=0):
@@ -175,7 +163,7 @@ def discrepancy(coeffs, Iinj, traj_list, lam, get_rho, ne,
     '''
     print('discr type ', discr_type)
     I_calculated = integrate_scan(coeffs, Iinj, traj_list, lam, get_rho,
-                                  ne, Te_interp,
+                                  ne, neAvg, Te_interp,
                                   sigmaEff12_interp, sigmaEff13_interp,
                                   sigmaEff23_interp)
     I_exp = Itot_interp(I_calculated[:, 1])
@@ -196,7 +184,7 @@ def discrepancy(coeffs, Iinj, traj_list, lam, get_rho, ne,
     return discr
 
 
-def discrepancy_I0(Iinj, coeffs, traj_list, lam, get_rho, ne,
+def discrepancy_I0(Iinj, coeffs, traj_list, lam, get_rho, ne, neAvg,
                    Itot_interp, Te_interp,
                    sigmaEff12_interp, sigmaEff13_interp,
                    sigmaEff23_interp, integrate_scan, discr_type=0):
@@ -207,7 +195,7 @@ def discrepancy_I0(Iinj, coeffs, traj_list, lam, get_rho, ne,
     '''
     print('discr type ', discr_type)
     I_calculated = integrate_scan(coeffs, Iinj*1e-6, traj_list, lam, get_rho,
-                                  ne, Te_interp,
+                                  ne, neAvg, Te_interp,
                                   sigmaEff12_interp, sigmaEff13_interp,
                                   sigmaEff23_interp)
     I_exp = Itot_interp(I_calculated[:, 1])
@@ -230,7 +218,7 @@ def discrepancy_I0(Iinj, coeffs, traj_list, lam, get_rho, ne,
 
 # %%
 def ne_NoAtten(Iinj, Itot_interp, traj_list, lam, get_rho, Te,
-               NeShapeFunc, NeFit, neAvg, sigmaEff12):
+               NeFit, neAvg, sigmaEff12):
     '''functions returns Ne(rho) and coeffsNe for ne=Itot/(2*Iinj*sigma*lam)
     zero beam attenuation
     '''
@@ -255,14 +243,8 @@ def ne_NoAtten(Iinj, Itot_interp, traj_list, lam, get_rho, Te,
     poptNe, pcovNe = optimize.curve_fit(NeShapeFunc, ne[:, 3], ne[:, 1],
                                         p0=[1, 0.1, -0.1], maxfev=5000)
     # normalize ne
-    rho = np.arange(-1.0, 1.01, 0.01)
-    k = neAvg/(0.5*integrate.simps(NeShapeFunc(rho, *poptNe), rho))
+    k = normalize_Ne(poptNe, neAvg)
     ne[:, 1] = k*ne[:, 1]
-    # make fitting of a normalized ne
-    poptNe, pcovNe = optimize.curve_fit(NeFit, (ne[:, 3],
-                                                np.full_like(ne[:, 3], neAvg)),
-                                        ne[:, 1],
-                                        p0=[1, 0.1, -0.1], maxfev=5000)
 
     plt.figure()
     plt.grid()
@@ -314,8 +296,7 @@ def dSigmaEff(vtarget, Ttarget, m_target, sigma, vbeam, m_beam):
         sigmaEff = genMaxwell(vtarget, Ttarget, m_target, vbeam, m_beam) * \
              v * sigma((0.5*m_target*v**2)/1.6e-19)
     except ValueError:
-        sigmaEff = genMaxwell(vtarget, Ttarget, m_target, vbeam, m_beam) * \
-             v * 0.0
+        sigmaEff = 0.0
     return sigmaEff
 
 
@@ -330,7 +311,7 @@ m_ion = 133*1.6605e-27  # Cs mass [kg]
 E = 132.0*1.602176634E-16  # beam energy [J]
 # E = tr[0].E*1.6e-16  # beam energy [J]
 v0 = math.sqrt(2*E/m_ion)  # initial particle velocity [m/s]
-rho = np.arange(-1, 1.01, 0.01)
+rho = np.arange(-1.1, 1.1, 0.01)
 
 # %% LOAD IONIZATION RATES
 
@@ -418,7 +399,13 @@ for artist, text in zip(leg.legendHandles, leg.get_texts()):
 plt.show()
 
 # %% import trajectories
-fname = 'E132-132_UA2-7-3_alpha74.1_beta-11.7_x270y-45z-17.pkl'
+fname = '50489_alpha72.8_beta-11.7_x270y-45z-17.pkl'
+fname = '50489_alpha72.8_beta-9.7_x270y-45z-17.pkl'
+fname = '50184_alpha72.8_beta-9.7_x270y-45z-17.pkl'
+fname = '52686_alpha74.3_beta-11.7_x270y-45z-17.pkl'
+
+# fname = 'E92-176_mar2020_B0.96_alpha-0.5.pkl'
+# fname = 'E132-132_UA2-7-3_alpha74.1_beta-11.7_x270y-45z-17.pkl'
 # fname = 'E144-144_UA2-8-2_alpha74.1_beta-11.7_x270y-45z-17.pkl'
 traj_list_loaded = hb.read_traj_list(fname, dirname='output//100_44_64')
 # select beam energy
@@ -435,7 +422,7 @@ print('list of trajectories loaded ' + fname)
 
 # %% import experimental Itot(rho)
 # rho_Ua2 should be generated in import_ro_config.py
-shot = 48431  # 48435  # 47152 #44162 #44543 #47152 #48431 #44584
+shot = 52686  #50186  # 50489  # 48431  # 48435  # 47152 #44162 #44543 #47152 #48431 #44584
 # file should contain t, Itot, A2, rho, Densidad2_
 filename = 'D:\\NRCKI\\TJ-II_programs\\Itot\\' + str(shot) + '.dat'  # + '_ne04.dat'
 # filename = 'D:\\Philipp\\TJ-II_programs\\Itot\\' + str(shot) + '_ne04.dat'
@@ -450,7 +437,7 @@ neAvg = np.mean(Itot[:, 4])  # line averagend ne [e19 m-3] from experiment
 print('\n****** ne = {:.2f}\n'.format(neAvg))
 
 # set beam current
-Iinj = 45e-6  #52e-6  # 100e-6  # injection beam current [A]
+Iinj = 100e-6  #52e-6  # 100e-6  # injection beam current [A]
 kAmpl = 2 * 1e7  # amplification coefficient HIBP-2 line A
 
 # flag to optimize I0
@@ -472,8 +459,8 @@ addPlots = False
 Itot_interp = interpolate.interp1d(Itot[:, 2], Itot[:, 1]/kAmpl)
 
 # %% import Thomson scattering data
-shotTS = 48441  #48435  # 48431  #45784  # 49867 # 48428 #47152 #47152
-t_TS = 1250  # 1270  # 1225 #1250  # 1150  # 1250
+shotTS = 52695  # 50186  # 48441  #48435  # 48431  #45784  # 49867 # 48428 #47152 #47152
+t_TS = 1210  # 1205  #1120  # 1270  # 1225 #1250  # 1150  # 1250
 Te, TeErr, coeffsTe, Ne, NeErr, coeffsNe = ImportTS(shotTS, t_TS, neAvg,
                                                     TeFit, NeFit)
 # coeffsNe = np.array([141.4147757, 5.4696319, -36.97264695])
@@ -500,7 +487,7 @@ if optimizeI0:
     Iinj = Iinj*1e6
     result_I0 = optimize.minimize(discrepancy_I0, Iinj,
                                   args=(coeffsNe, traj_list, lam, rho_interp,
-                                        NeFit,
+                                        NeFit, neAvg,
                                         Itot_interp, Te_interp,
                                         sigmaEff12_e_interp,
                                         sigmaEff13_e_interp,
@@ -521,7 +508,7 @@ if optimizeNe:
     t1 = time.time()
     result = optimize.minimize(discrepancy, coeffsNe,
                                args=(Iinj, traj_list, lam, rho_interp, NeFit,
-                                     Itot_interp, Te_interp,
+                                     neAvg, Itot_interp, Te_interp,
                                      sigmaEff12_e_interp, sigmaEff13_e_interp,
                                      sigmaEff23_e_interp, integrate_scan, 1),
                                method='BFGS', tol=1e-4,
@@ -536,7 +523,7 @@ else:
 
 # %% plot ne and Itot
 I_calculated = integrate_scan(coeffsNe, Iinj, traj_list, lam, rho_interp,
-                              NeFit, Te_interp, sigmaEff12_e_interp,
+                              NeFit, neAvg, Te_interp, sigmaEff12_e_interp,
                               sigmaEff13_e_interp, sigmaEff23_e_interp)
 
 # %%
@@ -571,7 +558,7 @@ plt.errorbar(I_calculated[:, 2], Itot_interp(I_calculated[:, 1]),
              capsize=3, fmt='o', color='k', label='experiment')
 
 I_calculated = integrate_scan(coeffs_res, Iinj, traj_list, lam, rho_interp,
-                              NeFit, Te_interp, sigmaEff12_e_interp,
+                              NeFit, neAvg, Te_interp, sigmaEff12_e_interp,
                               sigmaEff13_e_interp, sigmaEff23_e_interp)
 
 mask = I_calculated[:, 3] < 0
@@ -604,7 +591,7 @@ plt.legend()
 # %%
 # plot NORMALIZED Itot profiles
 I_calculated = integrate_scan(coeffsNe, Iinj, traj_list, lam, rho_interp,
-                              NeFit, Te_interp, sigmaEff12_e_interp,
+                              NeFit, neAvg, Te_interp, sigmaEff12_e_interp,
                               sigmaEff13_e_interp, sigmaEff23_e_interp)
 
 plt.figure()
@@ -618,7 +605,7 @@ plt.errorbar(I_calculated[:, 2],
              capsize=3, fmt='o', color='k', label='experiment')
 
 I_calculated = integrate_scan(coeffs_res, Iinj, traj_list, lam, rho_interp,
-                              NeFit, Te_interp, sigmaEff12_e_interp,
+                              NeFit, neAvg, Te_interp, sigmaEff12_e_interp,
                               sigmaEff13_e_interp, sigmaEff23_e_interp)
 
 
@@ -718,7 +705,7 @@ if addPlots:
 # %% final plot
 
 I_calculated = integrate_scan(coeffsNe, Iinj, traj_list, lam, rho_interp,
-                              NeFit, Te_interp, sigmaEff12_e_interp,
+                              NeFit, neAvg, Te_interp, sigmaEff12_e_interp,
                               sigmaEff13_e_interp, sigmaEff23_e_interp)
 
 fig, axs = plt.subplots(2, 3, sharex=True)
@@ -751,7 +738,7 @@ axs[0, 1].set_title('(b)', loc=title_loc)
 ne_result = np.array([NeFit((i, neAvg), *coeffs_res) for i in rho])
 
 maskTS = abs(Ne[:, 0]) < 0.05
-kTS = NeFit((0.0, neAvg), *coeffs_res) / np.mean(Ne[maskTS][:, 1])
+# kTS = NeFit((0.0, neAvg), *coeffs_res) / np.mean(Ne[maskTS][:, 1])
 kTS = 1
 
 axs[1, 1].errorbar(Ne[:, 0], kTS*Ne[:, 1], yerr=NeErr[:, 1],
@@ -769,7 +756,7 @@ axs[1, 2].errorbar(I_calculated[:, 2], Itot_interp(I_calculated[:, 1]),
                    capsize=3, fmt='o', color='k', label='experiment')
 
 I_calculated = integrate_scan(coeffs_res, Iinj, traj_list, lam, rho_interp,
-                              NeFit, Te_interp, sigmaEff12_e_interp,
+                              NeFit, neAvg, Te_interp, sigmaEff12_e_interp,
                               sigmaEff13_e_interp, sigmaEff23_e_interp)
 
 mask = I_calculated[:, 3] < 0
