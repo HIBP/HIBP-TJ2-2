@@ -40,7 +40,7 @@ pass2AN = False
 save_radref = True
 
 # A1 and B1 plates voltages
-UA1, UB1 = 0.0, 0.75  # [kV]
+UA1, UB1 = 0.1, 0.75  # [kV]
 
 # UA2 voltages
 UA2min, UA2max, dUA2 = -9., 5., 2.
@@ -70,8 +70,7 @@ r0 = geomTJ2.r_dict['r0']  # trajectory starting point
 # angles of aim plane normal [deg]
 alpha_aim = 0.
 beta_aim = 0.
-stop_plane_n = hb.calc_vector(1.0, alpha_aim, beta_aim,
-                              direction=(1, 1, 1))
+stop_plane_n = hb.calc_vector(1.0, alpha_aim, beta_aim)
 
 # %% Load Magnetic Field
 if 'B' not in locals():
@@ -149,8 +148,8 @@ for Ebeam in Ebeam_range:
     # shot = '48431'
     # shot = '52486'
     # shot = '50489'
-    # shot = '50184'
-    shot = '52686'
+    shot = '50184'
+    # shot = '52686'
 
     input_fname = 'input//II_a2&b2&a3&b3_' + shot + '.dat'
     print('\n>>INPUT FILE: ', input_fname)

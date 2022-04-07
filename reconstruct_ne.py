@@ -79,18 +79,18 @@ def integrate_traj(tr, lam, get_rho, ne, neAvg, coeffs, Te,
     r_loc = get_rho(tr.RV_sec[0, :3])[0]
     Te_loc = Te(r_loc)
     ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
-    sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))
+    sigmaEff_loc = sigmaEff12(Te_loc)
 
     # USE IF TE/NE NOT DEFINED BEYOND RHO=1.0
     # if r_loc <= 0.99:
     #     Te_loc = Te(r_loc)
     #     ne_loc = 1e19 * ne((r_loc, neAvg), *coeffs)
-    #     sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))
+    #     sigmaEff_loc = sigmaEff12(Te_loc)
     # else:
     #     # simple assumption for SOL
     #     Te_loc = Te(1.0)  # 0.
     #     ne_loc = 1e19 * 1e-2  # 0.
-    #     sigmaEff_loc = (sigmaEff12(Te_loc) + sigmaEff13(Te_loc))  # 0.
+    #     sigmaEff_loc = sigmaEff12(Te_loc)  # 0.
 
     # calculate total value with integrals
     # SV size, ion zones should be calculated!
@@ -309,7 +309,6 @@ m_e = 9.10938356e-31  # electron mass [kg]
 m_p = 1.6726219e-27  # proton mass [kg]
 m_ion = 133*1.6605e-27  # Cs mass [kg]
 E = 132.0*1.602176634E-16  # beam energy [J]
-# E = tr[0].E*1.6e-16  # beam energy [J]
 v0 = math.sqrt(2*E/m_ion)  # initial particle velocity [m/s]
 rho = np.arange(-1.1, 1.1, 0.01)
 
@@ -616,7 +615,7 @@ plt.plot(I_calculated[:, 2], I_calculated[:, 3]/max(I_calculated[:, 3]), '-o',
          color='r', label='final iteration')
 plt.xlim(-1.0, 1.0)
 plt.xlabel(r'$\rho$')
-plt.ylabel(r'$Normalized I_{tot}$ (A)')
+plt.ylabel(r'Normalized $I_{tot}$')
 plt.legend()
 plt.title('#' + str(shot) + r', $I_0$={:.0f} $\mu$A'.format(Iinj*1e6) +
           r', $\bar n_e$={:.2f}'.format(neAvg) +
