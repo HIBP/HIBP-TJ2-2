@@ -329,6 +329,16 @@ filename = 'D:\\NRCKI\\Cross_sections\\Cs\\rateCs+_p_Cs2+.txt'
 sigmaV12_p = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
 sigmaV12_p[:, 1] = sigmaV12_p[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
 
+# <sigma*v> for Cs+ + p -> Cs2+ + H (Charge-Exchange) from Shevelko
+filename = 'D:\\NRCKI\\Cross_sections\\Cs\\rateCs+_H+_calc.txt'
+sigmaV12_p_cx = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
+sigmaV12_p_cx[:, 1] = sigmaV12_p_cx[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
+
+# <sigma*v> for Cs+ + H -> Cs0 + p (Charge-Exchange) from Shevelko
+filename = 'D:\\NRCKI\\Cross_sections\\Cs\\rateCs+_H_calc.txt'
+sigmaV10_h_cx = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
+sigmaV10_h_cx[:, 1] = sigmaV10_h_cx[:, 1]*1e-6  # <sigma*v> goes to [m^3/s]
+
 # <sigma*v> for Cs2+ + e -> Cs3+ from Shevelko
 filename = 'D:\\NRCKI\\Cross_sections\\Cs\\rateCs2+_e_Cs3+.txt'
 sigmaV23_e = np.loadtxt(filename)  # [0] Te [eV] [1] <sigma*v> [cm^3/s]
@@ -351,6 +361,12 @@ sigmaEff12_p_interp = interpolate.interp1d(sigmaV12_p[:, 0]/1e3,
 sigmaEff13_e_interp = interpolate.interp1d(sigmaV13_e[:, 0]/1e3,
                                            sigmaV13_e[:, 1]/v0,
                                            kind=interp_type)  # Te in [keV]
+sigmaEff12_p_cx_interp = interpolate.interp1d(sigmaV12_p_cx[:, 0]/1e3,
+                                              sigmaV12_p_cx[:, 1]/v0,
+                                              kind=interp_type)  # Te in [keV]
+sigmaEff10_h_cx_interp = interpolate.interp1d(sigmaV10_h_cx[:, 0]/1e3,
+                                              sigmaV10_h_cx[:, 1]/v0,
+                                              kind=interp_type)  # Te in [keV]
 sigmaEff23_e_interp = interpolate.interp1d(sigmaV23_e[:, 0]/1e3,
                                            sigmaV23_e[:, 1]/v0,
                                            kind=interp_type)  # Te in [keV]
