@@ -277,8 +277,7 @@ def genMaxwell(vtarget, Ttarget, m_target, vbeam, m_beam):
             Ttarget in [eV]
     '''
     Ttarget = Ttarget*1.6e-19  # go to [J]
-#    v = abs(vtarget-vbeam)
-    v = vbeam-vtarget
+    v = abs(vtarget-vbeam)
     M = m_target*m_beam/(m_beam + m_target)
     return ((M/(2*np.pi*Ttarget))**0.5) * \
         (np.exp(-M*((v-vbeam)**2)/(2*Ttarget)) -
@@ -289,7 +288,7 @@ def dSigmaEff(vtarget, Ttarget, m_target, sigma, vbeam, m_beam):
     ''' function calculates d(effective cross section) for monoenergetic
         beam and target gas
         Ttarget in [eV]
-        sigma is a function of T in [eV]
+        sigma is a function of T=0.5*m*vtarget^2 in [eV]
     '''
     v = abs(vtarget-vbeam)
     try:
