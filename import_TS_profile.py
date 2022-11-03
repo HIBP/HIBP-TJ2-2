@@ -46,16 +46,16 @@ def NeFit(param, p1, p2, p3, p4):
 #    return (p1*(1-rho**2) + p2*(1-rho**4))*np.exp(-p3*rho**2)
 
 
-# def TeFit(rho, p1, p2, p3, p4):
+def TeFit(rho, p1, p2, p3, p4):
 # def TeFit(x, a, b):
 # def TeFit(x, y0, A, x_c, w, a, b):
-def TeFit(x, y0, a, w):
+# def TeFit(x, y0, a, w):
     ''' Te fit function
     '''
-    return y0 + a*np.exp(-(x**2) / (2*(w)**2))  # Gauss
+    # return y0 + a*np.exp(-(x**2) / (2*(w)**2))  # Gauss
     # return y0*(np.exp(-a*(1-x**2) - w*(1-x**4)) - 1)
     # return y0 + a*np.exp(-0.5*((x-xc)/w)**2)
-    # return p1*np.exp(-p2*rho**2 - p3*rho**4 - p4*rho**6)
+    return p1*np.exp(-p2*rho**2 - p3*rho**4 - p4*rho**6)
 
     # p = 1
     # return a*((1 + b*np.abs(x)**p)*np.exp(-b*np.abs(x)**p) - (1 + b)*np.exp(-b))
@@ -70,25 +70,26 @@ def TeFit(x, y0, a, w):
 # %%
 def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
              # coeffsTe0= [1, 1, 1, 1, 1, 1],
-              coeffsTe0=[1, 1, 1],
-             # coeffsTe0 = [0.05, -5, 2, 1.0],
+               # coeffsTe0=[1, 1, 1],
+              # coeffsTe0 = [0.05, -5, 2, 1.0],
+               coeffsTe0 = [1., 1., 1., 1.],
              coeffsNe0=[1, 1, 1, 1], plot_TS=True, t_He=1201):
     ''' TeFit and NeFit are functions for Ne and Te fitting
     '''
     # import Te
-    filename = 'G:\\cache\\Thomson.2\\PerfilTe_' + str(shot) + '_' + \
+    filename = 'D:\\cache\\Thomson.2\\PerfilTe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     Te = np.loadtxt(filename)  # [0]rho [1]Te
     # import Te errors
-    filename = 'G:\\cache\\Thomson.2\\PerfildTe_' + str(shot) + '_' + \
+    filename = 'D:\\cache\\Thomson.2\\PerfildTe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     TeErr = np.loadtxt(filename)  # [0]rho [1]TeErr
     # import Ne
-    filename = 'G:\\cache\\Thomson.2\\PerfilNe_' + str(shot) + '_' + \
+    filename = 'D:\\cache\\Thomson.2\\PerfilNe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     Ne = np.loadtxt(filename)  # [0]rho [1]Ne
     # import Ne errors
-    filename = 'G:\\cache\\Thomson.2\\PerfildNe_' + str(shot) + '_' + \
+    filename = 'D:\\cache\\Thomson.2\\PerfildNe_' + str(shot) + '_' + \
         str(t_TS) + '.dat'
     NeErr = np.loadtxt(filename)  # [0]rho [1]NeErr
 
@@ -102,29 +103,31 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
 
     # %% import He beam data
     try:
-        filename = 'G:\\cache\\Hebeam\\Te_'+ str(shot) + '_' + \
+        filename = 'D:\\cache\\Hebeam\\Te_'+ str(shot) + '_' + \
             str(t_He) + '.dat'
         Te_edge = np.loadtxt(filename)
         Te_edge[:, 1] = Te_edge[:, 1]/1000.  # go to keV
-        filename = 'G:\\cache\\Hebeam\\Ne_'+ str(shot) + '_' + \
+        filename = 'D:\\cache\\Hebeam\\Ne_'+ str(shot) + '_' + \
             str(t_He) + '.dat'
         Ne_edge = np.loadtxt(filename)
         print('He beam data imported, t = ', t_He)
         Hebeam_loaded = True
     except (FileNotFoundError, IOError) as e:
-        # set edge values manually
+        # set edge values manually [[rho, Te in keV], [...]]
         print(e)
         # Te_edge = [[0.8, 0.06], [1, 0.04]]*1000
-        Te_edge = [[0.8, 0.05], [1, 0.02]]*1000
-        # Ne_edge = [[0.8, 0.2], [1, 0.05]]*1000
+        # Te_edge = [[0.8, 0.05], [1, 0.02]]*1000
+        Te_edge = [[0.8, 0.04], [1, 0.01]]*1000
+        # Ne_edge = [[0.8, 0.3], [1, 0.05]]*1000
         # Ne_edge = [[0.8, 0.8], [1, 0.01]]*1000
-        Ne_edge = [[0.8, 0.5], [1, 0.02]]*1000
+        Ne_edge = [[0.8, 0.4], [1, 0.02]]*1000
+        # Ne_edge = [[0.8, 0.3], [1, 0.02]]*1000
         Hebeam_loaded = False
 
     # %% make fitting of TS data
     # fitting of Te
-    rho_min = -0.15
-    rho_max = 0.3
+    rho_min = -0.1
+    rho_max = 0.4
     mask_Te = (Te[:, 0] > rho_min) & (Te[:, 0] < rho_max)
     Te_data = Te[mask_Te]
 
@@ -135,8 +138,8 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
                                         p0=coeffsTe0, maxfev=5000)
 
     # make fitting of Ne shape
-    rho_min = -0.1
-    rho_max = 0.8
+    rho_min = -0.2
+    rho_max = 0.7
     mask_Ne = (Ne[:, 0] > rho_min) & (Ne[:, 0] < rho_max)
     Ne_data = Ne[mask_Ne]
 
@@ -153,6 +156,9 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
 
     # %% plot TS data
     if plot_TS:
+        # poptNe = [2.7547063 , 0.59897433, 4.14143101, 2.34357011]
+        # poptTe = [0.32658426, 2.82169597, 0.79468697, 0.12544259]
+        
         rho = np.arange(-1.02, 1.02, 0.01)
         plt.rcParams.update({'font.size': 14})
         shot_details = '#' + str(shot) + r', $t_{TS}$' + ' = {} ms, '.format(t_TS) + \
@@ -194,6 +200,7 @@ def ImportTS(shot, t_TS, neAvg, TeFit, NeFit,
                      '-o', color='g', label='He beam')
         plt.legend()
 
+    # return Te[mask_Te], TeErr[mask_Te], poptTe, Ne[mask_Ne], NeErr[mask_Ne], poptNe
     return Te, TeErr, poptTe, Ne, NeErr, poptNe
 
 
@@ -207,26 +214,51 @@ def saveECEcalib(filename, calib):
     return
 
 
+def save_processed_TS(Te, TeErr, Ne, NeErr, shot, t_TS,
+                      filepath='D:\\NRCKI\\2022\\TJII\\for_DebBasu_ICRH\\TS data\\'):
+    # save Te
+    filename = filepath + 'Te_' + str(shot) + '_' + str(t_TS) + '.dat'
+    np.savetxt(filename, Te)
+    filename = filepath + 'dTe_' + str(shot) + '_' + str(t_TS) + '.dat'
+    np.savetxt(filename, TeErr)
+    # save Ne
+    filename = filepath + 'Ne_' + str(shot) + '_' + str(t_TS) + '.dat'
+    np.savetxt(filename, Ne)
+    filename = filepath + 'dNe_' + str(shot) + '_' + str(t_TS) + '.dat'
+    np.savetxt(filename, NeErr)
+    print('processed TS data saved\n')
+
+    return
+
+
+def save_TS_fit(coeffsTe, coeffsNe, neAvg):
+    rho_array = np.arange(-1, 1.01, 0.01)
+    Te_array = np.array([rho_array, TeFit(rho_array, *coeffsTe)]).T
+    Ne_array = np.array([rho_array,
+                         NeFit((rho_array, np.full_like(rho_array, neAvg)),
+                               *coeffsNe)]).T
+    filename = 'D:\\cache\\TSfit\\Te_' + str(shot) + '.dat'
+    np.savetxt(filename, Te_array)
+    filename = 'D:\\cache\\TSfit\\Ne_' + str(shot) + '.dat'
+    np.savetxt(filename, Ne_array)
+    print('TSfits SAVED')
+
+    return
+
+
 # %%
 if __name__ == '__main__':
 
     plt.close('all')
-    shot = 52695  #50186 # 52548  # 50489  # 48441 # 48431  #50533  # 48435  # 48441  #48428  #48431 #48435 #47152 #44354 # 48441
-    t_TS = 1210  # 1205  # 1120  # 1140  # 1250
-    neAvg = 3.18  # 3.2 # 2.38  # 0.33  # 0.8  #0.46  # line-averaged density [e19 m-3]
-
-#    plt.close('all')
+    shot = 52659  # 52695  #50186 # 52548  # 50489  # 48441 # 48431  #50533  # 48435  # 48441  #48428  #48431 #48435 #47152 #44354 # 48441
+    t_TS = 1235  # 1210  # 1205  # 1120  # 1140  # 1250
+    # line-averaged density [e19 m-3]
+    neAvg = 3.79      # 3.18  # 3.2 # 2.38  # 0.33  # 0.8  #0.46
     # load Thomson profiles
-    Te, TeErr, coeffsTe, Ne, NeErr, coeffsNe = ImportTS(shot, t_TS, neAvg, TeFit, NeFit)
-
-#    rho_array = np.arange(-1,1.01,0.01)
-#    Te_array = np.array([rho_array, TeFit(rho_array, *coeffsTe)]).T
-#    Ne_array = np.array([rho_array, NeFit((rho_array,np.full_like(rho_array, neAvg)), *coeffsNe)]).T
-#    filename = 'D:\\cache\\TSfit\\Te_' + str(shot) + '.dat'
-#    np.savetxt(filename, Te_array)
-#    filename = 'D:\\cache\\TSfit\\Ne_' + str(shot) + '.dat'
-#    np.savetxt(filename, Ne_array)
-#    print('TSfits SAVED')
+    Te, TeErr, coeffsTe, Ne, NeErr, coeffsNe = ImportTS(shot, t_TS, neAvg,
+                                                        TeFit, NeFit)
+    # save_processed_TS(Te, TeErr, Ne, NeErr, shot, t_TS)
+    # save_TS_fit(coeffsTe, coeffsNe, neAvg)
 
     try:
         # load ECE
